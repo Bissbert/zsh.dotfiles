@@ -3,7 +3,7 @@
 This guide covers common tweaks to the tracked Zsh configuration.
 
 ## Powerlevel10k Prompt
-The template `zsh/p10k-classic.zsh` is based on the upstream classic preset with local overrides.
+The template `profiles/classic/p10k.zsh` is based on the upstream classic preset with local overrides.
 
 ### Prompt Layout
 - **Left prompt** (`POWERLEVEL9K_LEFT_PROMPT_ELEMENTS`): `dir`, `vcs`, `prompt_char`.
@@ -18,30 +18,37 @@ typeset -g POWERLEVEL9K_COMMAND_EXECUTION_TIME_THRESHOLD=2
 Adjust the threshold or colors (`FOREGROUND`, `BACKGROUND`) to suit your workflow.
 
 ### Colors and Icons
-Look for comments in `p10k-classic.zsh` describing segment-specific options. The fastest workflow:
+Look for comments in `profiles/classic/p10k.zsh` describing segment-specific options. The fastest workflow:
 1. Search for the segment name (e.g., `typeset -g POWERLEVEL9K_DIR_*`).
 2. Un-comment and adjust color codes or icon expansions.
 3. Restart your shell or run `source ~/.p10k.zsh`.
 
 ## `.zshrc` Lazy Loading
-The template `zsh/zshrc` includes a simple `zsh_defer` helper that delays sourcing heavy plugins until the next prompt. Customize it as follows:
+Each profile ships with its own `zshrc` (`profiles/classic/zshrc` or `profiles/pure/zshrc`). Both include a simple `zsh_defer` helper that delays sourcing heavy plugins until the next prompt. Customize it as follows:
 - **Adding plugins:** Append another `if` block using `zsh_defer source /path/to/plugin.zsh`.
 - **Removing plugins:** Delete the relevant block; `git` remains active via Oh My Zsh.
 - **Always-on plugins:** Move the `source` call above the deferred section if you need a plugin loaded immediately.
+
+### Pure Prompt Settings
+The Pure profile exposes environment variables near the top of its `zshrc`. Common tweaks:
+- `PURE_PROMPT_SYMBOL` – set a custom prompt glyph (default `❯`).
+- `PURE_CMD_MAX_EXEC_TIME` – adjust the threshold in seconds before execution times are shown.
+- `PURE_GIT_PULL=0` – disable automatic `git pull` reminders.
+Refer to the [Pure README](https://github.com/sindresorhus/pure#options) for the full list.
 
 ### Colorize Plugin
 The Oh My Zsh `colorize` plugin provides colorized output for `cat`, `tail`, and other commands when `pygmentize` (Pygments) or `chroma` is available. Configure it via:
 - `ZSH_COLORIZE_TOOL` (`pygmentize` or `chroma`, defaults to `pygmentize`).
 - `ZSH_COLORIZE_STYLE` for the color theme (see `pygmentize -L styles`).
 - `ZSH_COLORIZE_CHROMA_FORMATTER` when using `chroma`.
-Set these variables before the deferred sourcing block.citeturn0search2
+Set these variables before the deferred sourcing block.
 
 ### zsh-histdb
 `zsh-histdb` stores command history in SQLite. This setup places the database under `${XDG_DATA_HOME:-~/.local/share}/histdb`. Customize by setting:
 - `HISTDB_FILE` to an alternate database path.
 - `HISTDB_SYNC_REMOTE=1` to enable cross-host sync (requires manual setup).
 - `HISTDB_MAX_SIZE` to limit database size.
-The plugin requires `sqlite3` and sourcing `sqlite-history.zsh`, handled automatically by the template.citeturn0search0
+The plugin requires `sqlite3` and sourcing `sqlite-history.zsh`, handled automatically by the template.
 
 ### Completion Behavior
 - Extra completion definitions from `zsh-completions` are mounted into `fpath` before `compinit` runs.
@@ -59,9 +66,9 @@ If you already manage fonts centrally, comment out or remove `install_meslo_font
 
 ## Maintaining Forked Configs
 When making local edits:
-1. Update files under `zsh/`.
+1. Update files under `profiles/<name>/`.
 2. `git commit` the changes so machines using `--link` stay synchronized.
-3. Re-run `install_zsh.sh --copy` or `--link` as needed to propagate updates.
+3. Re-run `install_zsh.sh --copy` or `--link` as needed to propagate updates (include `--profile` if you are targeting non-default profiles).
 
 ## Tips for Further Performance
 - Disable rarely used Powerlevel10k segments to reduce prompt compute time.

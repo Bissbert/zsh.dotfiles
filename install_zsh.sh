@@ -2,9 +2,10 @@
 set -euo pipefail
 
 SYMLINK_MODE=0
+PROFILE="classic"
 SCRIPT_PATH="${BASH_SOURCE[0]:-${0}}"
 SCRIPT_DIR="$(cd "$(dirname "${SCRIPT_PATH}")" && pwd)"
-TEMPLATE_DIR="${SCRIPT_DIR}/zsh"
+TEMPLATE_DIR="${SCRIPT_DIR}/profiles/${PROFILE}"
 
 log() {
   printf '[%s] %s\n' "${1}" "${2}" >&2
@@ -17,10 +18,11 @@ die() {
 
 usage() {
   cat <<'EOF'
-Usage: install_zsh.sh [--link|--copy] [--help]
+Usage: install_zsh.sh [--link|--copy] [--profile <name>] [--help]
 
 --link    Create symlinks from templates in the repository to target files.
 --copy    Copy templates into place (default behavior).
+--profile Classic or Pure profile (default: classic).
 --help    Show this help message and exit.
 EOF
 }
@@ -38,6 +40,13 @@ main() {
         ;;
       --copy)
         SYMLINK_MODE=0
+        ;;
+      --profile)
+        shift || die '--profile requires an argument'
+        PROFILE="$1"
+        ;;
+      --profile=*)
+        PROFILE="${1#*=}"
         ;;
       -h|--help)
         usage
@@ -62,7 +71,8 @@ main() {
     die "Unknown argument(s): ${positional[*]}"
   fi
 
-  [[ -d "${TEMPLATE_DIR}" ]] || die "Template directory '${TEMPLATE_DIR}' is missing."
+  TEMPLATE_DIR="${SCRIPT_DIR}/profiles/${PROFILE}"
+  [[ -d "${TEMPLATE_DIR}" ]] || die "Profile '${PROFILE}' not found (expected ${TEMPLATE_DIR})."
 
   require_cmd curl
   require_cmd git
@@ -78,16 +88,20 @@ main() {
   backup_dir="${backup_root}/${timestamp}"
   mkdir -p "${backup_dir}"
 
-  local zsh_install_path zsh_custom
+  local zsh_install_path zsh_custom p10k_template has_p10k
   zsh_install_path="${home_dir}/.oh-my-zsh"
   zsh_custom="${ZSH_CUSTOM:-${zsh_install_path}/custom}"
+  p10k_template="${TEMPLATE_DIR}/p10k.zsh"
+  has_p10k=0
+  [[ -f "${p10k_template}" ]] && has_p10k=1
 
   install_oh_my_zsh "${zsh_install_path}"
   install_powerlevel10k "${zsh_custom}"
+  install_pure_theme "${zsh_custom}"
   install_plugins "${zsh_custom}"
   install_external_tools
   install_meslo_fonts
-  install_p10k_config "${home_dir}" "${backup_dir}"
+  install_p10k_config "${home_dir}" "${backup_dir}" "${p10k_template}" "${has_p10k}"
   install_zshrc "${home_dir}" "${backup_dir}"
   ensure_default_shell
 
@@ -125,6 +139,19 @@ install_powerlevel10k() {
   else
     git clone --depth=1 https://github.com/romkatv/powerlevel10k.git "${theme_dir}" || \
       die 'Powerlevel10k clone failed.'
+  fi
+}
+
+install_pure_theme() {
+  local zsh_custom theme_dir
+  zsh_custom="$1"
+  theme_dir="${zsh_custom}/themes/pure"
+  log 'INFO' 'Setting up Pure prompt...'
+  if [[ -d "${theme_dir}/.git" ]]; then
+    git -C "${theme_dir}" pull --ff-only || die 'Failed to update Pure prompt.'
+  else
+    git clone --depth=1 https://github.com/sindresorhus/pure.git "${theme_dir}" || \
+      die 'Pure prompt clone failed.'
   fi
 }
 
@@ -248,11 +275,21 @@ MesloLGS NF Bold Italic.ttf'
 }
 
 install_p10k_config() {
-  local home_dir backup_dir template dest
+  local home_dir backup_dir template has_template dest
   home_dir="$1"
   backup_dir="$2"
-  template="${TEMPLATE_DIR}/p10k-classic.zsh"
+  template="$3"
+  has_template="$4"
   dest="${home_dir}/.p10k.zsh"
+
+  if [[ "${has_template}" -eq 0 || ! -f "${template}" ]]; then
+    if [[ -f "${dest}" ]]; then
+      log 'INFO' 'Skipping .p10k.zsh update for this profile; existing file left in place.'
+    else
+      log 'INFO' 'No Powerlevel10k configuration for this profile; skipping.'
+    fi
+    return
+  fi
 
   deploy_file "${template}" "${dest}" "${backup_dir}"
 }
@@ -308,6 +345,7 @@ write_manifest() {
     printf 'repo_root=%s\n' "${SCRIPT_DIR}"
     printf 'git_commit=%s\n' "${git_commit}"
     printf 'mode=%s\n' "${mode}"
+    printf 'profile=%s\n' "${PROFILE}"
   } > "${manifest}"
 }
 

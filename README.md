@@ -4,7 +4,8 @@ This repository provides a reproducible setup for a customized Zsh environment b
 
 ## Highlights
 - Oh My Zsh bootstrap/update with reproducible plugin set.
-- Powerlevel10k classic prompt tuned for a single-line layout with curated segments.
+- Powerlevel10k classic prompt tuned for a single-line layout with curated segments (default profile).
+- Optional Pure prompt profile sharing the same plugin stack and lazy-loading setup.
 - MesloLGS Nerd Font download to ensure glyph compatibility.
 - Optional apt-based installation of external helpers (`autojump`, `direnv`), history storage (`sqlite3`), and syntax highlighting backend (`python3-pygments`).
 - Lazy-loaded plugins including autosuggestions, history substring search, colorized file preview, and syntax highlighting.
@@ -24,9 +25,10 @@ This repository provides a reproducible setup for a customized Zsh environment b
 README.md               – project overview (this file)
 install_zsh.sh          – main installer (copy/symlink aware)
 powerlevel10k.README.md – upstream theme documentation (reference only)
-zsh/
-  ├─ p10k-classic.zsh   – tracked Powerlevel10k configuration with overrides
-  └─ zshrc              – Oh My Zsh startup file with lazy-loaded plugins
+profiles/
+  ├─ classic/           – Powerlevel10k profile templates (`p10k.zsh`, `zshrc`)
+  └─ pure/              – Pure prompt profile template (`zshrc`, README)
+docs/                   – supplementary guides (installation, customization, profiling)
 ```
 Additional documentation lives under `docs/`.
 
@@ -34,19 +36,24 @@ Additional documentation lives under `docs/`.
 ```bash
 # clone or pull into your dotfiles directory
 cd ~/dotfiles
-# ensure the script is executable by running through bash
+
+# install the default Powerlevel10k profile
 bash install_zsh.sh --link   # or --copy if you prefer duplication
+
+# install the Pure profile instead
+bash install_zsh.sh --profile pure --link
 ```
 
 The script will:
 1. Install or update Oh My Zsh under `~/.oh-my-zsh`.
 2. Clone/update Powerlevel10k into `~/.oh-my-zsh/custom/themes/powerlevel10k`.
-3. Clone/update core plugins (`zsh-autosuggestions`, `zsh-completions`, `fast-syntax-highlighting`, `zsh-syntax-highlighting`, `zsh-histdb`).
-4. Install MesloLGS Nerd Fonts into `~/.local/share/fonts` (Linux) or `~/Library/Fonts` (macOS).
-5. Deploy `.zshrc` and `.p10k.zsh` via copy or symlink from the tracked templates.
-6. Attempt to install `autojump`, `direnv`, `sqlite3`, and `python3-pygments` (for `pygmentize`) using `apt`/`apt-get` when available.
-7. Back up previous dotfiles to `~/.zsh-backups/<timestamp>/` and log metadata in `install_manifest.txt`.
-8. Switch your login shell to `zsh` using `chsh` (if not already set).
+3. Clone/update the Pure prompt into `~/.oh-my-zsh/custom/themes/pure`.
+4. Clone/update core plugins (`zsh-autosuggestions`, `zsh-completions`, `fast-syntax-highlighting`, `zsh-syntax-highlighting`, `zsh-histdb`).
+5. Install MesloLGS Nerd Fonts into `~/.local/share/fonts` (Linux) or `~/Library/Fonts` (macOS).
+6. Deploy `.zshrc` and, if present, `.p10k.zsh` via copy or symlink from the selected profile.
+7. Attempt to install `autojump`, `direnv`, `sqlite3`, and `python3-pygments` (for `pygmentize`) using `apt`/`apt-get` when available.
+8. Back up previous dotfiles to `~/.zsh-backups/<timestamp>/` and log metadata in `install_manifest.txt`.
+9. Switch your login shell to `zsh` using `chsh` (if not already set).
 
 After the script finishes, open a new terminal session and set the profile font to **MesloLGS NF** in your terminal emulator.
 
@@ -63,10 +70,10 @@ ZSH_PROFILE=1 zsh -i -c 'exit'
 This writes a `zprof.<pid>.log` file into `~/.cache/zsh/`. Inspect the log to identify slow components (e.g., `_omz_source`, `compinit`, Powerlevel10k segments). See `docs/profiling.md` for interpretation tips.
 
 ## Customization
-- Edit `zsh/p10k-classic.zsh` to change prompt segments, thresholds, and colors. Re-run the installer (or re-source the file) to apply changes.
-- Adjust `zsh/zshrc` to add/remove deferred plugins or tweak the lazy-loading hooks.
-- Set `ZSH_COLORIZE_TOOL`, `ZSH_COLORIZE_STYLE`, or `ZSH_COLORIZE_CHROMA_FORMATTER` to control the colorize plugin backend and theme.citeturn0search2
-- Override the history database location via `HISTDB_FILE` (defaults to `$XDG_DATA_HOME/histdb/zsh-history.db` in this setup). The plugin requires `sqlite3` and sourcing `sqlite-history.zsh`, which the template handles for you.citeturn0search0
+- Edit `profiles/classic/p10k.zsh` to change Powerlevel10k segments, thresholds, and colors.
+- Adjust the profile-specific `zshrc` (`profiles/classic/zshrc` or `profiles/pure/zshrc`) to add/remove deferred plugins or tweak lazy-loading hooks.
+- Set `ZSH_COLORIZE_TOOL`, `ZSH_COLORIZE_STYLE`, or `ZSH_COLORIZE_CHROMA_FORMATTER` to control the colorize plugin backend and theme.
+- Override the history database location via `HISTDB_FILE` (defaults to `$XDG_DATA_HOME/histdb/zsh-history.db` in this setup). The plugin requires `sqlite3` and sourcing `sqlite-history.zsh`, which the template handles for you.
 - If you do not need optional helpers (`autojump`, `direnv`, `sqlite3`, `pygmentize`), remove or comment out their install blocks in `install_zsh.sh`.
 - Additional prompt segments can be enabled by adding them to the `POWERLEVEL9K_LEFT/RIGHT_PROMPT_ELEMENTS` arrays in `p10k-classic.zsh`.
 
@@ -74,6 +81,7 @@ For more detailed guidance, see:
 - [`docs/installation.md`](docs/installation.md) – system preparation, script execution options, and rollback notes.
 - [`docs/customization.md`](docs/customization.md) – prompt tweaks, plugin selection, and font tips.
 - [`docs/profiling.md`](docs/profiling.md) – using `zprof` to investigate slow startups.
+- [`docs/profiles.md`](docs/profiles.md) – overview of available profiles and how to add new ones.
 
 ## Troubleshooting
 - **Prompt glyphs broken**: ensure your terminal font is set to MesloLGS Nerd Font after running the installer.

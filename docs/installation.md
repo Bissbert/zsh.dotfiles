@@ -14,28 +14,28 @@ This document explains how to run `install_zsh.sh` and what happens behind the s
 ## Running the Installer
 ```bash
 cd ~/dotfiles/zsh
-bash install_zsh.sh          # copies by default
-bash install_zsh.sh --link    # symlinks templates from the repo
-bash install_zsh.sh --copy    # explicit copy mode
-bash install_zsh.sh --help    # usage information
+bash install_zsh.sh                # copies by default (classic profile)
+bash install_zsh.sh --link         # symlinks templates from the repo
+bash install_zsh.sh --profile pure # deploy the Pure profile instead of Powerlevel10k
+bash install_zsh.sh --help         # usage information
 ```
 
 ### What the Script Does
 1. Ensures required commands exist (`curl`, `git`, `zsh`).
 2. Creates a timestamped backup directory under `~/.zsh-backups/<timestamp>/`.
 3. Installs or updates Oh My Zsh to `~/.oh-my-zsh`.
-4. Installs or updates Powerlevel10k to `~/.oh-my-zsh/custom/themes/powerlevel10k`.
+4. Installs or updates Powerlevel10k to `~/.oh-my-zsh/custom/themes/powerlevel10k` and Pure to `~/.oh-my-zsh/custom/themes/pure`.
 5. Installs/updates the plugin repositories (`zsh-autosuggestions`, `zsh-completions`, `fast-syntax-highlighting`, `zsh-syntax-highlighting`, `zsh-histdb`).
 6. Installs MesloLGS Nerd Fonts to the appropriate fonts folder and refreshes the font cache (Linux).
-7. Copies or symlinks `.zshrc` and `.p10k.zsh` from the `zsh/` folder.
+7. Copies or symlinks `.zshrc` (and `.p10k.zsh` when the profile provides it) from `profiles/<name>/`.
 8. Attempts to install `autojump`, `direnv`, `sqlite3`, and `python3-pygments` (for `pygmentize`) with `apt`/`apt-get` if missing.
 9. Switches your default shell to Zsh using `chsh -s $(which zsh)` if necessary.
-10. Writes `install_manifest.txt` inside the backup folder with the timestamp, script path, repo commit hash, and deployment mode.
+10. Writes `install_manifest.txt` inside the backup folder with the timestamp, script path, repo commit hash, deployment mode, and profile name.
 
 ## Post-Installation Steps
 - Restart your terminal or run `exec zsh`.
 - Configure your terminal emulator to use **MesloLGS NF** (Regular) for best glyph coverage.
-- Verify the prompt: it should be a single-line Powerlevel10k prompt with git, status, timer, battery, and time segments.
+- Verify the prompt: for the classic profile you’ll see the Powerlevel10k single-line layout; for the pure profile you’ll see Pure’s async prompt.
 
 ## Re-running Safely
 Re-run the script at any time; it will back up current files before applying updates. When using `--link`, ensure the repo path remains unchanged so symlinks stay valid.
@@ -47,7 +47,7 @@ All replaced files are stored in `~/.zsh-backups/<timestamp>/`. To revert:
 3. Re-run `exec zsh`.
 
 ## Updating Across Machines
-- Commit changes to the repository (especially within `zsh/`).
+- Commit changes to the repository (especially within `profiles/<name>/`).
 - On a new machine, clone the repo and run `bash install_zsh.sh --link` to pick up identical configuration.
 
 ## Troubleshooting
