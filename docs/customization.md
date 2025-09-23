@@ -36,6 +36,13 @@ The Pure profile exposes environment variables near the top of its `zshrc`. Comm
 - `PURE_GIT_PULL=0` – disable automatic `git pull` reminders.
 Refer to the [Pure README](https://github.com/sindresorhus/pure#options) for the full list.
 
+### Fastfetch Welcome Screen
+The classic profile prints a Fastfetch dashboard at startup when the binary is available. The installer generates `~/.config/fastfetch/config.jsonc` with a curated module list (OS, kernel, uptime, packages, shell, CPU/GPU, memory, disks, display, battery, media). Customize it by:
+- Setting `FASTFETCH_DISABLE=1` to turn the banner off.
+- Passing extra arguments with `FASTFETCH_FLAGS` (string or array). When unset, Fastfetch uses the config file under `~/.config/fastfetch/config.jsonc` created by the installer.
+- Editing `profiles/classic/fastfetch_logo.txt` to change the ASCII art; re-run the installer to copy it to `~/.config/fastfetch/logo.txt` and refresh the config to point at that file.
+Fastfetch binaries are downloaded from the official GitHub releases when missing; ensure `~/.local/bin` is on your `PATH` or adjust the install script to point elsewhere.
+
 ### Colorize Plugin
 The Oh My Zsh `colorize` plugin provides colorized output for `cat`, `tail`, and other commands when `pygmentize` (Pygments) or `chroma` is available. Configure it via:
 - `ZSH_COLORIZE_TOOL` (`pygmentize` or `chroma`, defaults to `pygmentize`).

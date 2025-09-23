@@ -7,6 +7,9 @@ The installer supports multiple configuration profiles stored under `profiles/`.
 - Prompt: Powerlevel10k "Classic" preset with repo-specific overrides.
 - Recommended font: MesloLGS NF (installed automatically).
 - `.p10k.zsh` is deployed alongside `.zshrc`.
+- Includes a Fastfetch welcome screen (disable with `FASTFETCH_DISABLE=1` or customize flags via `FASTFETCH_FLAGS`).
+- ASCII logo template lives in `profiles/classic/fastfetch_logo.txt` and is copied to `~/.config/fastfetch/logo.txt` by the installer.
+- A default `config.jsonc` is generated pointing Fastfetch to the custom logo and enabling a standard module set if no config exists already.
 
 ## pure
 - Files: `profiles/pure/zshrc`, `profiles/pure/README.md`.

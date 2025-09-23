@@ -6,8 +6,9 @@ This repository provides a reproducible setup for a customized Zsh environment b
 - Oh My Zsh bootstrap/update with reproducible plugin set.
 - Powerlevel10k classic prompt tuned for a single-line layout with curated segments (default profile).
 - Optional Pure prompt profile sharing the same plugin stack and lazy-loading setup.
+- Fastfetch welcome screen in the classic profile (disable with `FASTFETCH_DISABLE=1`).
 - MesloLGS Nerd Font download to ensure glyph compatibility.
-- Optional apt-based installation of external helpers (`autojump`, `direnv`), history storage (`sqlite3`), and syntax highlighting backend (`python3-pygments`).
+- Optional apt-based installation of external helpers (`autojump`, `direnv`), system dashboard (`fastfetch`), history storage (`sqlite3`), and syntax highlighting backend (`python3-pygments`).
 - Lazy-loaded plugins including autosuggestions, history substring search, colorized file preview, and syntax highlighting.
 - `zsh-histdb` integration for SQLite-backed command history, with XDG-friendly storage defaults.
 - Config templates stored under version control; choose copy or symlink deployment (`--copy` or `--link`).
@@ -52,8 +53,9 @@ The script will:
 5. Install MesloLGS Nerd Fonts into `~/.local/share/fonts` (Linux) or `~/Library/Fonts` (macOS).
 6. Deploy `.zshrc` and, if present, `.p10k.zsh` via copy or symlink from the selected profile.
 7. Attempt to install `autojump`, `direnv`, `sqlite3`, and `python3-pygments` (for `pygmentize`) using `apt`/`apt-get` when available.
-8. Back up previous dotfiles to `~/.zsh-backups/<timestamp>/` and log metadata in `install_manifest.txt`.
-9. Switch your login shell to `zsh` using `chsh` (if not already set).
+8. Download a prebuilt Fastfetch binary from the official GitHub releases if it isn’t already on your PATH.
+9. Back up previous dotfiles to `~/.zsh-backups/<timestamp>/` and log metadata in `install_manifest.txt`.
+10. Switch your login shell to `zsh` using `chsh` (if not already set).
 
 After the script finishes, open a new terminal session and set the profile font to **MesloLGS NF** in your terminal emulator.
 
@@ -72,6 +74,7 @@ This writes a `zprof.<pid>.log` file into `~/.cache/zsh/`. Inspect the log to id
 ## Customization
 - Edit `profiles/classic/p10k.zsh` to change Powerlevel10k segments, thresholds, and colors.
 - Adjust the profile-specific `zshrc` (`profiles/classic/zshrc` or `profiles/pure/zshrc`) to add/remove deferred plugins or tweak lazy-loading hooks.
+- Update `profiles/classic/fastfetch_logo.txt` to change the ASCII welcome banner copied to `~/.config/fastfetch/logo.txt` (the generated `config.jsonc` points at that absolute path and seeds a standard module list).
 - Set `ZSH_COLORIZE_TOOL`, `ZSH_COLORIZE_STYLE`, or `ZSH_COLORIZE_CHROMA_FORMATTER` to control the colorize plugin backend and theme.
 - Override the history database location via `HISTDB_FILE` (defaults to `$XDG_DATA_HOME/histdb/zsh-history.db` in this setup). The plugin requires `sqlite3` and sourcing `sqlite-history.zsh`, which the template handles for you.
 - If you do not need optional helpers (`autojump`, `direnv`, `sqlite3`, `pygmentize`), remove or comment out their install blocks in `install_zsh.sh`.

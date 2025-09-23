@@ -29,8 +29,9 @@ bash install_zsh.sh --help         # usage information
 6. Installs MesloLGS Nerd Fonts to the appropriate fonts folder and refreshes the font cache (Linux).
 7. Copies or symlinks `.zshrc` (and `.p10k.zsh` when the profile provides it) from `profiles/<name>/`.
 8. Attempts to install `autojump`, `direnv`, `sqlite3`, and `python3-pygments` (for `pygmentize`) with `apt`/`apt-get` if missing.
-9. Switches your default shell to Zsh using `chsh -s $(which zsh)` if necessary.
-10. Writes `install_manifest.txt` inside the backup folder with the timestamp, script path, repo commit hash, deployment mode, and profile name.
+9. Downloads a prebuilt Fastfetch binary from the official GitHub releases if it isn’t already on your PATH.
+10. Switches your default shell to Zsh using `chsh -s $(which zsh)` if necessary.
+11. Writes `install_manifest.txt` inside the backup folder with the timestamp, script path, repo commit hash, deployment mode, and profile name.
 
 ## Post-Installation Steps
 - Restart your terminal or run `exec zsh`.
@@ -52,7 +53,7 @@ All replaced files are stored in `~/.zsh-backups/<timestamp>/`. To revert:
 
 ## Troubleshooting
 - **Fonts still wrong:** Some terminal apps require closing/relaunching after adding new fonts. On Linux, run `fc-cache -f ~/.local/share/fonts` manually if needed.
-- **`apt` unavailable:** The script falls back to warnings; install `autojump`, `direnv`, `sqlite3`, and `Pygments` (`pygmentize`) using your system’s package manager (brew, dnf, pacman, etc.).
+- **`apt` unavailable:** The script falls back to warnings; install `autojump`, `direnv`, `sqlite3`, and `Pygments` (`pygmentize`) using your system’s package manager (brew, dnf, pacman, etc.). Fastfetch is fetched directly from GitHub releases when possible; otherwise download it manually from https://github.com/fastfetch-cli/fastfetch/releases.
 - **`chsh` fails:** Run `sudo chsh -s $(which zsh) $USER` or adjust `/etc/passwd` with admin assistance.
 
 Happy hacking!

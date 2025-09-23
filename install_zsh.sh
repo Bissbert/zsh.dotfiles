@@ -5,10 +5,10 @@ SYMLINK_MODE=0
 PROFILE="classic"
 SCRIPT_PATH="${BASH_SOURCE[0]:-${0}}"
 SCRIPT_DIR="$(cd "$(dirname "${SCRIPT_PATH}")" && pwd)"
-TEMPLATE_DIR="${SCRIPT_DIR}/profiles/${PROFILE}"
+TEMPLATE_DIR=""
 
 log() {
-  printf '[%s] %s\n' "${1}" "${2}" >&2
+  printf '[%s] %s\n' "$1" "$2" >&2
 }
 
 die() {
@@ -17,14 +17,14 @@ die() {
 }
 
 usage() {
-  cat <<'EOF'
-Usage: install_zsh.sh [--link|--copy] [--profile <name>] [--help]
+  cat <<'USAGE'
+Usage: install_zsh.sh [--copy|--link] [--profile <name>] [--help]
 
---link    Create symlinks from templates in the repository to target files.
---copy    Copy templates into place (default behavior).
---profile Classic or Pure profile (default: classic).
---help    Show this help message and exit.
-EOF
+--copy        Copy profile files into place (default).
+--link        Symlink profile files from the repository.
+--profile     Profile name under profiles/ to deploy (default: classic).
+--help        Show this help message and exit.
+USAGE
 }
 
 require_cmd() {
@@ -32,6 +32,58 @@ require_cmd() {
 }
 
 main() {
+  parse_args "$@"
+
+  TEMPLATE_DIR="${SCRIPT_DIR}/profiles/${PROFILE}"
+  [[ -d "${TEMPLATE_DIR}" ]] || die "Profile '${PROFILE}' not found (expected ${TEMPLATE_DIR})."
+
+  require_cmd curl
+  require_cmd git
+  require_cmd zsh
+  require_cmd tar
+  require_cmd find
+
+  local home_dir
+  home_dir=${HOME:-""}
+  [[ -n "${home_dir}" ]] || die 'Unable to determine HOME directory.'
+
+  local timestamp backup_root backup_dir
+  timestamp=$(date +%Y%m%d-%H%M%S)
+  backup_root="${home_dir}/.zsh-backups"
+  backup_dir="${backup_root}/${timestamp}"
+  mkdir -p "${backup_dir}"
+
+  local zsh_install_path zsh_custom p10k_template has_p10k fastfetch_logo_template
+  zsh_install_path="${home_dir}/.oh-my-zsh"
+  zsh_custom="${ZSH_CUSTOM:-${zsh_install_path}/custom}"
+  p10k_template="${TEMPLATE_DIR}/p10k.zsh"
+  has_p10k=0
+  [[ -f "${p10k_template}" ]] && has_p10k=1
+  fastfetch_logo_template="${TEMPLATE_DIR}/fastfetch_logo.txt"
+
+  install_oh_my_zsh "${zsh_install_path}"
+  install_powerlevel10k "${zsh_custom}"
+  install_pure_theme "${zsh_custom}"
+  install_plugins "${zsh_custom}"
+  install_external_tools
+  install_meslo_fonts
+  install_p10k_config "${home_dir}" "${backup_dir}" "${p10k_template}" "${has_p10k}"
+  install_zshrc "${home_dir}" "${backup_dir}"
+  install_fastfetch_logo "${home_dir}" "${backup_dir}" "${fastfetch_logo_template}"
+  ensure_default_shell
+
+  write_manifest "${backup_dir}" "${timestamp}"
+
+  log 'INFO' "Backups stored in ${backup_dir}"
+  log 'INFO' 'Installation complete. Set MesloLGS NF in your terminal profile to finish setup.'
+  log 'HINT' 'Install autojump manually if needed: sudo apt install autojump'
+  log 'HINT' 'Install direnv manually if needed: sudo apt install direnv'
+  log 'HINT' 'Install sqlite3 manually if needed: sudo apt install sqlite3'
+  log 'HINT' 'Install Pygments manually if needed: sudo apt install python3-pygments'
+  log 'HINT' 'Download fastfetch manually if needed: https://github.com/fastfetch-cli/fastfetch/releases'
+}
+
+parse_args() {
   local positional=()
   while (($#)); do
     case "$1" in
@@ -70,49 +122,6 @@ main() {
   if ((${#positional[@]})); then
     die "Unknown argument(s): ${positional[*]}"
   fi
-
-  TEMPLATE_DIR="${SCRIPT_DIR}/profiles/${PROFILE}"
-  [[ -d "${TEMPLATE_DIR}" ]] || die "Profile '${PROFILE}' not found (expected ${TEMPLATE_DIR})."
-
-  require_cmd curl
-  require_cmd git
-  require_cmd zsh
-
-  local home_dir
-  home_dir=${HOME:-""}
-  [[ -n "${home_dir}" ]] || die 'Unable to determine HOME directory.'
-
-  local timestamp backup_root backup_dir
-  timestamp=$(date +%Y%m%d-%H%M%S)
-  backup_root="${home_dir}/.zsh-backups"
-  backup_dir="${backup_root}/${timestamp}"
-  mkdir -p "${backup_dir}"
-
-  local zsh_install_path zsh_custom p10k_template has_p10k
-  zsh_install_path="${home_dir}/.oh-my-zsh"
-  zsh_custom="${ZSH_CUSTOM:-${zsh_install_path}/custom}"
-  p10k_template="${TEMPLATE_DIR}/p10k.zsh"
-  has_p10k=0
-  [[ -f "${p10k_template}" ]] && has_p10k=1
-
-  install_oh_my_zsh "${zsh_install_path}"
-  install_powerlevel10k "${zsh_custom}"
-  install_pure_theme "${zsh_custom}"
-  install_plugins "${zsh_custom}"
-  install_external_tools
-  install_meslo_fonts
-  install_p10k_config "${home_dir}" "${backup_dir}" "${p10k_template}" "${has_p10k}"
-  install_zshrc "${home_dir}" "${backup_dir}"
-  ensure_default_shell
-
-  write_manifest "${backup_dir}" "${timestamp}"
-
-  log 'INFO' "Backups stored in ${backup_dir}"
-  log 'INFO' 'Installation complete. Set MesloLGS NF in your terminal profile to finish setup.'
-  log 'HINT' 'Install autojump manually if needed: sudo apt install autojump'
-  log 'HINT' 'Install direnv manually if needed: sudo apt install direnv'
-  log 'HINT' 'Install sqlite3 manually if needed: sudo apt install sqlite3'
-  log 'HINT' 'Install Pygments manually if needed: sudo apt install python3-pygments'
 }
 
 install_oh_my_zsh() {
@@ -155,30 +164,6 @@ install_pure_theme() {
   fi
 }
 
-deploy_file() {
-  local src dest backup_dir dest_dir backup_target
-  src="$1"
-  dest="$2"
-  backup_dir="$3"
-
-  [[ -f "${src}" ]] || die "Template '${src}' is missing."
-
-  dest_dir="$(dirname "${dest}")"
-  mkdir -p "${dest_dir}"
-
-  if [[ -e "${dest}" || -L "${dest}" ]]; then
-    backup_target="${backup_dir}/$(basename "${dest}")"
-    cp -a "${dest}" "${backup_target}" || die "Failed to back up ${dest}."
-    rm -rf "${dest}"
-  fi
-
-  if (( SYMLINK_MODE )); then
-    ln -s "${src}" "${dest}" || die "Failed to symlink ${src} -> ${dest}."
-  else
-    cp "${src}" "${dest}" || die "Failed to copy ${src} to ${dest}."
-  fi
-}
-
 install_plugins() {
   local zsh_custom
   zsh_custom="$1"
@@ -209,6 +194,7 @@ install_external_tools() {
   ensure_command_available direnv direnv
   ensure_command_available sqlite3 sqlite3
   ensure_command_available pygmentize python3-pygments
+  ensure_command_available fastfetch fastfetch
 }
 
 ensure_command_available() {
@@ -217,6 +203,11 @@ ensure_command_available() {
   package="$2"
 
   if command -v "${binary}" >/dev/null 2>&1; then
+    return
+  fi
+
+  if [[ "${binary}" == "fastfetch" ]]; then
+    install_fastfetch_release
     return
   fi
 
@@ -274,6 +265,65 @@ MesloLGS NF Bold Italic.ttf'
   fi
 }
 
+install_fastfetch_release() {
+  local arch platform_url tmp_dir archive_path extracted_binary dest_bin
+
+  arch=$(uname -m)
+  case "${arch}" in
+    x86_64|amd64)
+      platform_url="https://github.com/fastfetch-cli/fastfetch/releases/latest/download/fastfetch-linux-amd64.tar.gz"
+      ;;
+    aarch64|arm64)
+      platform_url="https://github.com/fastfetch-cli/fastfetch/releases/latest/download/fastfetch-linux-aarch64.tar.gz"
+      ;;
+    armv7l|armhf)
+      platform_url="https://github.com/fastfetch-cli/fastfetch/releases/latest/download/fastfetch-linux-armv7.tar.gz"
+      ;;
+    *)
+      log 'WARN' "fastfetch is not available for architecture '${arch}'. Install it manually from https://github.com/fastfetch-cli/fastfetch/releases"
+      return
+  esac
+
+  tmp_dir=$(mktemp -d)
+  archive_path="${tmp_dir}/fastfetch.tar.gz"
+  log 'INFO' "Downloading fastfetch from ${platform_url}"
+  if ! curl -fsSL "${platform_url}" -o "${archive_path}"; then
+    rm -rf "${tmp_dir}"
+    log 'WARN' 'Failed to download fastfetch release archive. Install manually from https://github.com/fastfetch-cli/fastfetch/releases'
+    return
+  fi
+
+  if ! tar -xzf "${archive_path}" -C "${tmp_dir}"; then
+    rm -rf "${tmp_dir}"
+    log 'WARN' 'Failed to extract fastfetch archive. Install manually from https://github.com/fastfetch-cli/fastfetch/releases'
+    return
+  fi
+
+  extracted_binary=$(find "${tmp_dir}" -type f -name fastfetch -perm -u+x | head -n 1)
+  if [[ -z "${extracted_binary}" ]]; then
+    rm -rf "${tmp_dir}"
+    log 'WARN' 'fastfetch binary not found in archive. Install manually from https://github.com/fastfetch-cli/fastfetch/releases'
+    return
+  fi
+
+  dest_bin="${HOME}/.local/bin"
+  mkdir -p "${dest_bin}"
+  if ! cp "${extracted_binary}" "${dest_bin}/fastfetch"; then
+    rm -rf "${tmp_dir}"
+    log 'WARN' "Failed to install fastfetch into ${dest_bin}. Install manually from https://github.com/fastfetch-cli/fastfetch/releases"
+    return
+  fi
+  chmod +x "${dest_bin}/fastfetch"
+  rm -rf "${tmp_dir}"
+  hash -r || true
+
+  if ! command -v fastfetch >/dev/null 2>&1; then
+    log 'WARN' "fastfetch installed to ${dest_bin}, but the directory is not in PATH. Add 'export PATH=\"${dest_bin}:\$PATH\"' to your shell init."
+  else
+    log 'INFO' "fastfetch installed to ${dest_bin}/fastfetch"
+  fi
+}
+
 install_p10k_config() {
   local home_dir backup_dir template has_template dest
   home_dir="$1"
@@ -305,6 +355,63 @@ install_zshrc() {
   deploy_file "${template}" "${dest}" "${backup_dir}"
 }
 
+install_fastfetch_logo() {
+  local home_dir backup_dir template config_dir dest config_file
+  home_dir="$1"
+  backup_dir="$2"
+  template="$3"
+
+  [[ -f "${template}" ]] || return
+
+  config_dir="${XDG_CONFIG_HOME:-${home_dir}/.config}/fastfetch"
+  dest="${config_dir}/logo.txt"
+  config_file="${config_dir}/config.jsonc"
+  mkdir -p "${config_dir}"
+
+  if [[ -f "${dest}" ]]; then
+    cp "${dest}" "${backup_dir}/$(basename "${dest}")" || \
+      die 'Failed to back up existing fastfetch logo.'
+  fi
+
+  cp "${template}" "${dest}" || die 'Failed to install fastfetch logo.'
+
+  if [[ -f "${config_file}" ]] && grep -q '"type"[[:space:]]*:[[:space:]]*"ascii"' "${config_file}"; then
+    log 'INFO' "Updating fastfetch config to file-based logo"
+    rm -f "${config_file}"
+  fi
+
+  if [[ ! -f "${config_file}" ]]; then
+    cat >"${config_file}" <<EOF
+{
+  "logo": {
+    "type": "file",
+    "source": "${dest}"
+  },
+  "modules": [
+    "title",
+    "separator",
+    {
+      "type": "os"
+    },
+    "kernel",
+    "uptime",
+    "packages",
+    "shell",
+    "terminal",
+    "cpu",
+    "memory",
+    "break",
+    "gpu",
+    "disk",
+    "display",
+    "battery",
+    "media"
+  ]
+}
+EOF
+  fi
+}
+
 ensure_default_shell() {
   local current_shell target_shell
   target_shell=$(command -v zsh)
@@ -318,6 +425,30 @@ ensure_default_shell() {
     fi
   else
     log 'INFO' 'Zsh is already the default shell.'
+  fi
+}
+
+deploy_file() {
+  local src dest backup_dir dest_dir backup_target
+  src="$1"
+  dest="$2"
+  backup_dir="$3"
+
+  [[ -f "${src}" ]] || die "Template '${src}' is missing."
+
+  dest_dir="$(dirname "${dest}")"
+  mkdir -p "${dest_dir}"
+
+  if [[ -e "${dest}" || -L "${dest}" ]]; then
+    backup_target="${backup_dir}/$(basename "${dest}")"
+    cp -a "${dest}" "${backup_target}" || die "Failed to back up ${dest}."
+    rm -rf "${dest}"
+  fi
+
+  if (( SYMLINK_MODE )); then
+    ln -s "${src}" "${dest}" || die "Failed to symlink ${src} -> ${dest}."
+  else
+    cp "${src}" "${dest}" || die "Failed to copy ${src} to ${dest}."
   fi
 }
 
