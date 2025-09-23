@@ -1,0 +1,71 @@
+# Customization Guide
+
+This guide covers common tweaks to the tracked Zsh configuration.
+
+## Powerlevel10k Prompt
+The template `zsh/p10k-classic.zsh` is based on the upstream classic preset with local overrides.
+
+### Prompt Layout
+- **Left prompt** (`POWERLEVEL9K_LEFT_PROMPT_ELEMENTS`): `dir`, `vcs`, `prompt_char`.
+- **Right prompt** (`POWERLEVEL9K_RIGHT_PROMPT_ELEMENTS`): status indicators, language/runtime segments, toolbox context, todo/time trackers, `battery`, and `time`.
+- Add or remove segments by editing these arrays. A list of available segments is documented in the upstream README and in your installer logs.
+
+### Command Timer
+`POWERLEVEL9K_COMMAND_EXECUTION_TIME_*` controls the timer segment:
+```zsh
+typeset -g POWERLEVEL9K_COMMAND_EXECUTION_TIME_THRESHOLD=2
+```
+Adjust the threshold or colors (`FOREGROUND`, `BACKGROUND`) to suit your workflow.
+
+### Colors and Icons
+Look for comments in `p10k-classic.zsh` describing segment-specific options. The fastest workflow:
+1. Search for the segment name (e.g., `typeset -g POWERLEVEL9K_DIR_*`).
+2. Un-comment and adjust color codes or icon expansions.
+3. Restart your shell or run `source ~/.p10k.zsh`.
+
+## `.zshrc` Lazy Loading
+The template `zsh/zshrc` includes a simple `zsh_defer` helper that delays sourcing heavy plugins until the next prompt. Customize it as follows:
+- **Adding plugins:** Append another `if` block using `zsh_defer source /path/to/plugin.zsh`.
+- **Removing plugins:** Delete the relevant block; `git` remains active via Oh My Zsh.
+- **Always-on plugins:** Move the `source` call above the deferred section if you need a plugin loaded immediately.
+
+### Colorize Plugin
+The Oh My Zsh `colorize` plugin provides colorized output for `cat`, `tail`, and other commands when `pygmentize` (Pygments) or `chroma` is available. Configure it via:
+- `ZSH_COLORIZE_TOOL` (`pygmentize` or `chroma`, defaults to `pygmentize`).
+- `ZSH_COLORIZE_STYLE` for the color theme (see `pygmentize -L styles`).
+- `ZSH_COLORIZE_CHROMA_FORMATTER` when using `chroma`.
+Set these variables before the deferred sourcing block.citeturn0search2
+
+### zsh-histdb
+`zsh-histdb` stores command history in SQLite. This setup places the database under `${XDG_DATA_HOME:-~/.local/share}/histdb`. Customize by setting:
+- `HISTDB_FILE` to an alternate database path.
+- `HISTDB_SYNC_REMOTE=1` to enable cross-host sync (requires manual setup).
+- `HISTDB_MAX_SIZE` to limit database size.
+The plugin requires `sqlite3` and sourcing `sqlite-history.zsh`, handled automatically by the template.citeturn0search0
+
+### Completion Behavior
+- Extra completion definitions from `zsh-completions` are mounted into `fpath` before `compinit` runs.
+- `compinit` executes via `zsh_defer compinit -C -u`, using the cache file at `${XDG_CACHE_HOME:-~/.cache}/zsh/.zcompdump-*`.
+- To reset completions, delete the compdump file and start a new shell.
+
+## External Tools
+`install_zsh.sh` tries to install `autojump`, `direnv`, `sqlite3`, and `python3-pygments` (for `pygmentize`) with `apt`. If you prefer a different package manager or want to skip installation entirely, remove or comment out the `ensure_command_available` calls in the script.
+
+### Alternative Plugin Managers
+You can integrate other managers (e.g., `antidote`, `zinit`) by replacing the relevant sections in `.zshrc`. Be sure to update this repository so linked machines stay in sync.
+
+## Fonts
+If you already manage fonts centrally, comment out or remove `install_meslo_fonts` in the script, or replace the URLs with alternative Nerd Fonts.
+
+## Maintaining Forked Configs
+When making local edits:
+1. Update files under `zsh/`.
+2. `git commit` the changes so machines using `--link` stay synchronized.
+3. Re-run `install_zsh.sh --copy` or `--link` as needed to propagate updates.
+
+## Tips for Further Performance
+- Disable rarely used Powerlevel10k segments to reduce prompt compute time.
+- Keep `zsh-completions` in sync; older versions may include slow rules.
+- Profile with `ZSH_PROFILE=1` after significant changes (see `docs/profiling.md`).
+
+Happy customizing!
