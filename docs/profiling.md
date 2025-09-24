@@ -18,7 +18,7 @@ The log is the standard `zprof` output sorted by self time. Typical heavy hitter
 Investigate entries with large self-time values. Common improvements:
 - Disable unused segments in `p10k-classic.zsh` to reduce Powerlevel10k init time.
 - Remove heavy plugins or move them to deferred loading in `zshrc`.
-- Delete the compdump cache and re-run `compinit -C -u` if `compaudit` becomes slow on network mounts.
+- Delete the compdump cache and re-run `compinit -C -d "$ZSH_COMPDUMP"` if `compaudit` becomes slow on network mounts.
 
 ## Sharing Results
 For consistent reproduction, attach the following to bug reports or commit messages:

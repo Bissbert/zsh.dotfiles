@@ -54,49 +54,35 @@ if [[ -n "${ZSH_PROFILE:-}" ]]; then
   add-zsh-hook zshexit _zsh_profile_dump_zshexit
 fi
 
-if [[ -z "${FZF_COMPLETION_TRIGGER+x}" ]]; then
-  export FZF_COMPLETION_TRIGGER=''
-fi
-
-plugins=(git fzf-zsh-plugin)
+plugins=(git)
 
 source "$ZSH/oh-my-zsh.sh"
 
-__zsh_fzf_wrap_completion() {
-  setopt localoptions noshwordsplit noksh_arrays
-  local -a tokens
-  tokens=(${(z)LBUFFER})
+if (( ! ${+_zsh_compinit_ran} )); then
+  compinit -C -d "$ZSH_COMPDUMP"
+  typeset -g _zsh_compinit_ran=1
+fi
 
-  if (( ! ${+__zsh_fzf_orig_completion} )); then
-    zle -A fzf-completion __zsh_fzf_orig_completion 2>/dev/null || return
-  fi
+if [[ -r "$ZSH_CUSTOM/plugins/fzf-tab/fzf-tab.plugin.zsh" ]]; then
+  source "$ZSH_CUSTOM/plugins/fzf-tab/fzf-tab.plugin.zsh"
+else
+  zsh_defer print -u2 "[zsh-config] Missing fzf-tab plugin; completions will fallback to stock compsys."
+fi
 
-  if (( ${#tokens} == 0 )); then
-    zle ${fzf_default_completion:-expand-or-complete}
-    return
-  fi
-
-  local prefix lbuf
-  prefix=${tokens[-1]}
-
-  if (( ${#tokens} == 1 )) && [[ ${prefix} == (./*|../*|/*|~*|.*) ]]; then
-    lbuf="${LBUFFER:0:-${#prefix}}"
-    _fzf_path_completion "${prefix}" "${lbuf}"
-    zle reset-prompt
-    return
-  fi
-
-  zle __zsh_fzf_orig_completion
-}
-
-__zsh_fzf_completion_setup() {
-  [[ -n ${__zsh_fzf_completion_ready:-} ]] && return
-  typeset -g __zsh_fzf_completion_ready=1
-  fzf_default_completion=${fzf_default_completion:-expand-or-complete}
-  zle -A fzf-completion __zsh_fzf_orig_completion 2>/dev/null || return
-  zle -N __zsh_fzf_wrap_completion
-  bindkey '^I' __zsh_fzf_wrap_completion
-}
+zmodload zsh/complist 2>/dev/null || true
+zstyle ':completion:*:descriptions' format '[%d]'
+zstyle ':completion:*' menu no
+if [[ -n ${LS_COLORS:-} ]]; then
+  zstyle ':completion:*' list-colors ${(s.:.)LS_COLORS}
+fi
+if command -v eza >/dev/null 2>&1; then
+  zstyle ':fzf-tab:complete:cd:*' fzf-preview 'eza -1 --color=always $realpath'
+elif command -v exa >/dev/null 2>&1; then
+  zstyle ':fzf-tab:complete:cd:*' fzf-preview 'exa -1 --color=always $realpath'
+elif command -v ls >/dev/null 2>&1; then
+  zstyle ':fzf-tab:complete:cd:*' fzf-preview 'ls -p $realpath'
+fi
+zstyle ':fzf-tab:*' switch-group '<' '>'
 
 if [[ -r "$ZSH/plugins/colored-man-pages/colored-man-pages.plugin.zsh" ]]; then
   zsh_defer source "$ZSH/plugins/colored-man-pages/colored-man-pages.plugin.zsh"
@@ -132,16 +118,14 @@ if command -v direnv >/dev/null 2>&1; then
   fi
 fi
 
-# Ensure the completion cache warms up after additional completions load.
-zsh_defer compinit -C -u
-
 fzf_base="${FZF_PATH:-$HOME/.fzf}"
+if [[ -f "${fzf_base}/shell/key-bindings.zsh" ]]; then
+  zsh_defer source "${fzf_base}/shell/key-bindings.zsh"
+fi
 if [[ -f "${fzf_base}/shell/completion.zsh" ]]; then
-  zsh_defer source "${fzf_base}/shell/completion.zsh"
+  zsh_defer print -u2 "[zsh-config] Skipping legacy fzf completion shim in favor of fzf-tab."
 fi
 unset fzf_base
-
-zsh_defer __zsh_fzf_completion_setup
 
 [[ -f "$HOME/.p10k.zsh" ]] && source "$HOME/.p10k.zsh"
 

@@ -59,8 +59,9 @@ The plugin requires `sqlite3` and sourcing `sqlite-history.zsh`, handled automat
 
 ### Completion Behavior
 - Extra completion definitions from `zsh-completions` are mounted into `fpath` before `compinit` runs.
-- `compinit` executes via `zsh_defer compinit -C -u`, using the cache file at `${XDG_CACHE_HOME:-~/.cache}/zsh/.zcompdump-*`.
-- To reset completions, delete the compdump file and start a new shell.
+- `compinit` executes once per session (guarded by `_zsh_compinit_ran`) with `compinit -C -d "$ZSH_COMPDUMP"`, so subsequent profile reloads avoid redo work.
+- Fuzzy completion is provided by `fzf-tab`, which is sourced immediately after `compinit`. Customize its behaviour via `zstyle ':fzf-tab:*' ...` entries in the profile.
+- To reset completions, delete `${XDG_CACHE_HOME:-~/.cache}/zsh/.zcompdump-*` and start a new shell.
 
 ## External Tools
 `install_zsh.sh` tries to install `autojump`, `direnv`, `sqlite3`, and `python3-pygments` (for `pygmentize`) with `apt`. If you prefer a different package manager or want to skip installation entirely, remove or comment out the `ensure_command_available` calls in the script.

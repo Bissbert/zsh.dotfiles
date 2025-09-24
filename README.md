@@ -10,9 +10,10 @@ This repository provides a reproducible setup for a customized Zsh environment b
 - MesloLGS Nerd Font download to ensure glyph compatibility.
 - Optional apt-based installation of external helpers (`autojump`, `direnv`), system dashboard (`fastfetch`), history storage (`sqlite3`), and syntax highlighting backend (`python3-pygments`).
 - Lazy-loaded plugins including autosuggestions, history substring search, colorized file preview, and syntax highlighting.
+- `fzf-tab` integration replaces Zsh's menu selection with a fuzzy picker (branches, Make targets, etc.).
 - `zsh-histdb` integration for SQLite-backed command history, with XDG-friendly storage defaults.
 - Config templates stored under version control; choose copy or symlink deployment (`--copy` or `--link`).
-- Lazy-loaded plugins and deferred `compinit` for faster shell startup.
+- Lean `compinit` run once per session with caching for quick startups.
 - Optional profiling hook to generate `zprof` reports for further tuning.
 
 ## Requirements
@@ -49,7 +50,7 @@ The script will:
 1. Install or update Oh My Zsh under `~/.oh-my-zsh`.
 2. Clone/update Powerlevel10k into `~/.oh-my-zsh/custom/themes/powerlevel10k`.
 3. Clone/update the Pure prompt into `~/.oh-my-zsh/custom/themes/pure`.
-4. Clone/update core plugins (`zsh-autosuggestions`, `zsh-completions`, `fast-syntax-highlighting`, `zsh-syntax-highlighting`, `zsh-histdb`).
+4. Clone/update core plugins (`zsh-autosuggestions`, `zsh-completions`, `fast-syntax-highlighting`, `zsh-syntax-highlighting`, `zsh-histdb`, `fzf-tab`).
 5. Install MesloLGS Nerd Fonts into `~/.local/share/fonts` (Linux) or `~/Library/Fonts` (macOS).
 6. Deploy `.zshrc` and, if present, `.p10k.zsh` via copy or symlink from the selected profile.
 7. Attempt to install `autojump`, `direnv`, `sqlite3`, and `python3-pygments` (for `pygmentize`) using `apt`/`apt-get` when available.
@@ -88,7 +89,7 @@ For more detailed guidance, see:
 
 ## Troubleshooting
 - **Prompt glyphs broken**: ensure your terminal font is set to MesloLGS Nerd Font after running the installer.
-- **Slow completions**: confirm the compdump cache exists under `~/.cache/zsh/`. Profiling may reveal additional heavy plugins.
+- **Slow completions**: confirm the compdump cache exists under `~/.cache/zsh/`. Delete stale caches with `rm -f "${XDG_CACHE_HOME:-$HOME/.cache}/zsh/.zcompdump-"*` and start a new shell.
 - **`autojump`/`direnv` warnings**: install the binaries manually if your system uses a package manager other than apt (the script records hints at the end).
 - **`chsh` failed**: run `chsh -s $(which zsh)` manually with appropriate permissions.
 

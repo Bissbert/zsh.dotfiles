@@ -25,7 +25,7 @@ bash install_zsh.sh --help         # usage information
 2. Creates a timestamped backup directory under `~/.zsh-backups/<timestamp>/`.
 3. Installs or updates Oh My Zsh to `~/.oh-my-zsh`.
 4. Installs or updates Powerlevel10k to `~/.oh-my-zsh/custom/themes/powerlevel10k` and Pure to `~/.oh-my-zsh/custom/themes/pure`.
-5. Installs/updates the plugin repositories (`zsh-autosuggestions`, `zsh-completions`, `fast-syntax-highlighting`, `zsh-syntax-highlighting`, `zsh-histdb`).
+5. Installs/updates the plugin repositories (`zsh-autosuggestions`, `zsh-completions`, `fast-syntax-highlighting`, `zsh-syntax-highlighting`, `zsh-histdb`, `fzf-tab`).
 6. Installs MesloLGS Nerd Fonts to the appropriate fonts folder and refreshes the font cache (Linux).
 7. Copies or symlinks `.zshrc` (and `.p10k.zsh` when the profile provides it) from `profiles/<name>/`.
 8. Attempts to install `autojump`, `direnv`, `sqlite3`, and `python3-pygments` (for `pygmentize`) with `apt`/`apt-get` if missing.
