@@ -173,6 +173,7 @@ install_plugins() {
     [zsh-syntax-highlighting]=https://github.com/zsh-users/zsh-syntax-highlighting.git
     [fast-syntax-highlighting]=https://github.com/zdharma-continuum/fast-syntax-highlighting.git
     [zsh-histdb]=https://github.com/larkery/zsh-histdb.git
+    [fzf-zsh-plugin]=https://github.com/unixorn/fzf-zsh-plugin.git
   )
 
   for plugin in "${!plugin_repos[@]}"; do

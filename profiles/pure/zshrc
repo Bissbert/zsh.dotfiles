@@ -63,12 +63,52 @@ if [[ -n "${ZSH_PROFILE:-}" ]]; then
   add-zsh-hook zshexit _zsh_profile_dump_zshexit
 fi
 
-plugins=(git)
+if [[ -z "${FZF_COMPLETION_TRIGGER+x}" ]]; then
+  export FZF_COMPLETION_TRIGGER=''
+fi
+
+plugins=(git fzf-zsh-plugin)
 
 source "$ZSH/oh-my-zsh.sh"
 
 promptinit
 prompt pure
+
+__zsh_fzf_wrap_completion() {
+  setopt localoptions noshwordsplit noksh_arrays
+  local -a tokens
+  tokens=(${(z)LBUFFER})
+
+  if (( ! ${+__zsh_fzf_orig_completion} )); then
+    zle -A fzf-completion __zsh_fzf_orig_completion 2>/dev/null || return
+  fi
+
+  if (( ${#tokens} == 0 )); then
+    zle ${fzf_default_completion:-expand-or-complete}
+    return
+  fi
+
+  local prefix lbuf
+  prefix=${tokens[-1]}
+
+  if (( ${#tokens} == 1 )) && [[ ${prefix} == (./*|../*|/*|~*|.*) ]]; then
+    lbuf="${LBUFFER:0:-${#prefix}}"
+    _fzf_path_completion "${prefix}" "${lbuf}"
+    zle reset-prompt
+    return
+  fi
+
+  zle __zsh_fzf_orig_completion
+}
+
+__zsh_fzf_completion_setup() {
+  [[ -n ${__zsh_fzf_completion_ready:-} ]] && return
+  typeset -g __zsh_fzf_completion_ready=1
+  fzf_default_completion=${fzf_default_completion:-expand-or-complete}
+  zle -A fzf-completion __zsh_fzf_orig_completion 2>/dev/null || return
+  zle -N __zsh_fzf_wrap_completion
+  bindkey '^I' __zsh_fzf_wrap_completion
+}
 
 if [[ -r "$ZSH/plugins/colored-man-pages/colored-man-pages.plugin.zsh" ]]; then
   zsh_defer source "$ZSH/plugins/colored-man-pages/colored-man-pages.plugin.zsh"
@@ -106,6 +146,14 @@ fi
 
 # Ensure the completion cache warms up after additional completions load.
 zsh_defer compinit -C -u
+
+fzf_base="${FZF_PATH:-$HOME/.fzf}"
+if [[ -f "${fzf_base}/shell/completion.zsh" ]]; then
+  zsh_defer source "${fzf_base}/shell/completion.zsh"
+fi
+unset fzf_base
+
+zsh_defer __zsh_fzf_completion_setup
 
 cdx() {
   if [[ "$1" == "update" ]]; then
