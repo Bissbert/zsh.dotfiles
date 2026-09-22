@@ -132,7 +132,7 @@ install_oh_my_zsh() {
     git -C "${target}" pull --ff-only || die 'Failed to update Oh My Zsh.'
   else
     log 'INFO' 'Installing Oh My Zsh...'
-    RUNZSH=no CHSH=no KEEP_ZSHRC=yes \
+    ZSH="${target}" RUNZSH=no CHSH=no KEEP_ZSHRC=yes \
       sh -c "$(curl -fsSL https://raw.githubusercontent.com/ohmyzsh/ohmyzsh/master/tools/install.sh)" || \
       die 'Oh My Zsh installation failed.'
   fi
