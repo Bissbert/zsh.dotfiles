@@ -2,6 +2,14 @@
 
 # Bugs found during the documentation pass
 
+> **Since this pass:** an independent adjudication confirmed the entry below,
+> and a subsequent fix pass applied it to the default branch in commit
+> `3627c9e`. `install_oh_my_zsh` now passes `ZSH="${target}"` to the upstream
+> bootstrap alongside `RUNZSH`, `CHSH` and `KEEP_ZSHRC`, so the bootstrap
+> installs to the same directory the installer uses for detection and updates.
+> Read the reproduction below as the state at the time of the pass, not as the
+> current state of the default branch.
+
 ## Oh My Zsh bootstrap inherits an unrelated `ZSH` variable
 
 **File and lines:** `install_zsh.sh:135-136`
