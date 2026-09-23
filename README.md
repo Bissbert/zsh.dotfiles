@@ -1,101 +1,176 @@
 # Zsh Config Installer
 
-This repository provides a reproducible setup for a customized Zsh environment built on top of Oh My Zsh and the Powerlevel10k "Classic" prompt style. The installer script can either copy the tracked configuration files into place or symlink them directly from the repository, making it suitable for dotfiles management across machines.
+This repository installs a reproducible Zsh environment built around Oh My Zsh,
+with Powerlevel10k Classic or Pure as the prompt, a shared completion and
+history stack, and copy or symlink deployment. The installer updates external
+checkouts, backs up files it replaces, and records the selected profile and
+deployment mode in an install manifest.
 
-## Highlights
-- Oh My Zsh bootstrap/update with reproducible plugin set.
-- Powerlevel10k classic prompt tuned for a single-line layout with curated segments (default profile).
-- Optional Pure prompt profile sharing the same plugin stack and lazy-loading setup.
-- Fastfetch welcome screen in the classic profile (disable with `FASTFETCH_DISABLE=1`).
-- MesloLGS Nerd Font download to ensure glyph compatibility.
-- Optional apt-based installation of external helpers (`autojump`, `direnv`), system dashboard (`fastfetch`), history storage (`sqlite3`), and syntax highlighting backend (`python3-pygments`).
-- Lazy-loaded plugins including autosuggestions, history substring search, colorized file preview, and syntax highlighting.
-- `fzf-tab` integration replaces Zsh's menu selection with a fuzzy picker (branches, Make targets, etc.).
-- `zsh-histdb` integration for SQLite-backed command history, with XDG-friendly storage defaults.
-- Config templates stored under version control; choose copy or symlink deployment (`--copy` or `--link`).
-- Lean `compinit` run once per session with caching for quick startups.
-- Optional profiling hook to generate `zprof` reports for further tuning.
+```mermaid
+flowchart LR
+    R["tracked profiles<br/>classic or pure"] --> I["install_zsh.sh"]
+    I --> O["Oh My Zsh<br/>themes and plugins"]
+    I --> H["user home<br/>.zshrc and prompt files"]
+    H --> S["interactive Zsh<br/>prompt and tools"]
 
-## Requirements
-- Bash 4+, curl, git, and zsh available on the target system.
-- Internet access to fetch Oh My Zsh, Powerlevel10k, plugins, and fonts.
-- `apt`/`apt-get` (plus sudo rights) if you want the script to auto-install `autojump` and `direnv`.
-- For the symlink mode, keep the repository accessible at the same path (e.g., via your dotfiles checkout).
-
-## Repository Layout
+    style R fill:#1f6feb,stroke:#58a6ff,color:#fff
+    style S fill:#238636,stroke:#3fb950,color:#fff
 ```
-README.md               – project overview (this file)
-install_zsh.sh          – main installer (copy/symlink aware)
-powerlevel10k.README.md – upstream theme documentation (reference only)
-profiles/
-  ├─ classic/           – Powerlevel10k profile templates (`p10k.zsh`, `zshrc`)
-  └─ pure/              – Pure prompt profile template (`zshrc`, README)
-docs/                   – supplementary guides (installation, customization, profiling)
+
+## Quick start
+
+```sh
+git clone https://github.com/Bissbert/zsh.dotfiles.git ~/dotfiles/zsh.dotfiles
+cd ~/dotfiles/zsh.dotfiles
+
+# Inspect the supported deployment options.
+bash install_zsh.sh --help
+
+# Deploy the classic profile as symlinks.
+bash install_zsh.sh --link
 ```
-Additional documentation lives under `docs/`.
 
-## Quick Start
-```bash
-# clone or pull into your dotfiles directory
-cd ~/dotfiles
+The help command, shell syntax checks, and the measurement harness were run for
+this pass. The full installer command was also attempted in an isolated home,
+but did not complete because an inherited `ZSH` environment variable made the
+Oh My Zsh bootstrap select the real home checkout. See
+[`docs/BUGS-FOUND.md`](docs/BUGS-FOUND.md) and the limitation below. The command
+above is therefore source-defined but untested to completion here.
 
-# install the default Powerlevel10k profile
-bash install_zsh.sh --link   # or --copy if you prefer duplication
+Use `--copy` instead of `--link` for independent deployed files, or select the
+Pure prompt with `--profile pure`:
 
-# install the Pure profile instead
+```sh
+bash install_zsh.sh --copy
 bash install_zsh.sh --profile pure --link
 ```
 
-The script will:
-1. Install or update Oh My Zsh under `~/.oh-my-zsh`.
-2. Clone/update Powerlevel10k into `~/.oh-my-zsh/custom/themes/powerlevel10k`.
-3. Clone/update the Pure prompt into `~/.oh-my-zsh/custom/themes/pure`.
-4. Clone/update core plugins (`zsh-autosuggestions`, `zsh-completions`, `fast-syntax-highlighting`, `zsh-syntax-highlighting`, `zsh-histdb`, `fzf-tab`).
-5. Install MesloLGS Nerd Fonts into `~/.local/share/fonts` (Linux) or `~/Library/Fonts` (macOS).
-6. Deploy `.zshrc` and, if present, `.p10k.zsh` via copy or symlink from the selected profile.
-7. Attempt to install `autojump`, `direnv`, `sqlite3`, and `python3-pygments` (for `pygmentize`) using `apt`/`apt-get` when available.
-8. Download a prebuilt Fastfetch binary from the official GitHub releases if it isn’t already on your PATH.
-9. Back up previous dotfiles to `~/.zsh-backups/<timestamp>/` and log metadata in `install_manifest.txt`.
-10. Switch your login shell to `zsh` using `chsh` (if not already set).
+## How a profile loads
 
-After the script finishes, open a new terminal session and set the profile font to **MesloLGS NF** in your terminal emulator.
+The selected profile is deployed as `~/.zshrc` (or under `ZDOTDIR`). The profile
+sets paths and history locations, sources the core, initializes completion,
+loads `fzf-tab`, registers deferred plugins, and then reaches the prompt. The
+classic profile also sources `~/.p10k.zsh`; Pure loads its prompt from the
+custom theme directory instead.
 
-## Copy vs Link Modes
-- `--copy` *(default)*: copies template files and preserves existing files under `~/.zsh-backups/<timestamp>/`.
-- `--link`: symlinks template files from the repository into place. Keep the repo accessible (e.g., via your dotfiles checkout) to ensure updates propagate automatically.
-- `--help`: prints usage information.
+```mermaid
+flowchart TD
+    A["Zsh starts<br/>reads deployed .zshrc"] --> B["Set ZSH, cache,<br/>PATH and HISTDB_FILE"]
+    B --> C["Source zsh-histdb<br/>when available"]
+    C --> D["Source Oh My Zsh<br/>plugins = git"]
+    D --> E["Initialize compinit<br/>with cached dump"]
+    E --> F["Source fzf-tab<br/>set completion styles"]
+    F --> G["Register deferred plugins<br/>and optional fzf bindings"]
+    G --> H{"profile"}
+    H -->|classic| I["Source ~/.p10k.zsh"]
+    H -->|pure| J["promptinit<br/>prompt pure"]
+    I --> K["First prompt<br/>deferred hooks run"]
+    J --> K
+    K --> L["User overrides belong at the<br/>end of the selected profile template"]
 
-## Profiling Shell Startup
-Enable profiling by exporting `ZSH_PROFILE=1` before launching an interactive shell:
-```bash
-ZSH_PROFILE=1 zsh -i -c 'exit'
+    style D fill:#1f6feb,stroke:#58a6ff,color:#fff
+    style K fill:#238636,stroke:#3fb950,color:#fff
+    style L fill:#8250df,stroke:#bc8cff,color:#fff
 ```
-This writes a `zprof.<pid>.log` file into `~/.cache/zsh/`. Inspect the log to identify slow components (e.g., `_omz_source`, `compinit`, Powerlevel10k segments). See `docs/profiling.md` for interpretation tips.
 
-## Customization
-- Edit `profiles/classic/p10k.zsh` to change Powerlevel10k segments, thresholds, and colors.
-- Adjust the profile-specific `zshrc` (`profiles/classic/zshrc` or `profiles/pure/zshrc`) to add/remove deferred plugins or tweak lazy-loading hooks.
-- Update `profiles/classic/fastfetch_logo.txt` to change the ASCII welcome banner copied to `~/.config/fastfetch/logo.txt` (the generated `config.jsonc` points at that absolute path and seeds a standard module list).
-- Set `ZSH_COLORIZE_TOOL`, `ZSH_COLORIZE_STYLE`, or `ZSH_COLORIZE_CHROMA_FORMATTER` to control the colorize plugin backend and theme.
-- Override the history database location via `HISTDB_FILE` (defaults to `$XDG_DATA_HOME/histdb/zsh-history.db` in this setup). The plugin requires `sqlite3` and sourcing `sqlite-history.zsh`, which the template handles for you.
-- If you do not need optional helpers (`autojump`, `direnv`, `sqlite3`, `pygmentize`), remove or comment out their install blocks in `install_zsh.sh`.
-- Additional prompt segments can be enabled by adding them to the `POWERLEVEL9K_LEFT/RIGHT_PROMPT_ELEMENTS` arrays in `p10k-classic.zsh`.
+There is no separate override file in this repository. Put persistent shell
+overrides at the end of `profiles/classic/zshrc` or `profiles/pure/zshrc`; put
+Powerlevel10k segment changes in `profiles/classic/p10k.zsh`. With `--link`,
+the deployed file points back to the repository, so editing the target edits
+the checkout too.
 
-For more detailed guidance, see:
-- [`docs/installation.md`](docs/installation.md) – system preparation, script execution options, and rollback notes.
-- [`docs/customization.md`](docs/customization.md) – prompt tweaks, plugin selection, and font tips.
-- [`docs/profiling.md`](docs/profiling.md) – using `zprof` to investigate slow startups.
-- [`docs/profiles.md`](docs/profiles.md) – overview of available profiles and how to add new ones.
+## Installer and update flow
 
-## Troubleshooting
-- **Prompt glyphs broken**: ensure your terminal font is set to MesloLGS Nerd Font after running the installer.
-- **Slow completions**: confirm the compdump cache exists under `~/.cache/zsh/`. Delete stale caches with `rm -f "${XDG_CACHE_HOME:-$HOME/.cache}/zsh/.zcompdump-"*` and start a new shell.
-- **`autojump`/`direnv` warnings**: install the binaries manually if your system uses a package manager other than apt (the script records hints at the end).
-- **`chsh` failed**: run `chsh -s $(which zsh)` manually with appropriate permissions.
+```mermaid
+flowchart TD
+    A["install_zsh.sh<br/>parse mode and profile"] --> B["Check curl, git, zsh,<br/>tar and find"]
+    B --> C["Create ~/.zsh-backups/<br/>timestamp/"]
+    C --> D{"checkout exists?"}
+    D -->|yes| E["git pull --ff-only"]
+    D -->|no| F["git clone --depth=1"]
+    E --> G["Install or update<br/>themes and plugins"]
+    F --> G
+    G --> H["Optional tools and fonts<br/>with warnings on failure"]
+    H --> I["Back up existing targets<br/>then copy or symlink"]
+    I --> J["Write install_manifest.txt<br/>and try chsh"]
+    J --> K["New shell uses the profile"]
+    I -. back out .-> L["Remove current targets<br/>restore files from backup"]
 
-## Contributing / Extending
-- Commit template changes so that `--link` users automatically receive updates.
-- Document any additional plugins or external dependencies in `docs/customization.md`.
-- Use branches or tags to capture known-good configurations for specific machines.
+    style G fill:#1f6feb,stroke:#58a6ff,color:#fff
+    style J fill:#238636,stroke:#3fb950,color:#fff
+    style L fill:#9e6a03,stroke:#d29922,color:#fff
+```
 
-Enjoy a reproducible and performant Zsh prompt!
+Existing `.zshrc` and `.p10k.zsh` files are copied into the timestamped backup
+directory before deployment. The classic profile also backs up an existing
+Fastfetch logo. Updating an existing checkout is a fast-forward-only pull.
+Pure does not provide a Powerlevel10k template; if a `.p10k.zsh` already exists,
+the installer leaves it in place.
+
+## Profiles and capabilities
+
+| Capability | Classic | Pure |
+|---|---|---|
+| Prompt | Powerlevel10k Classic | Pure async prompt |
+| Prompt config | `~/.p10k.zsh` from the profile | no new `.p10k.zsh` |
+| Fastfetch banner | terminal-only, when available | not configured |
+| Oh My Zsh core and `git` plugin | yes | yes |
+| `zsh-completions`, `compinit`, `fzf-tab` | yes | yes |
+| SQLite-backed `zsh-histdb` | yes, when its script is present | yes, when its script is present |
+| Deferred suggestions and syntax highlighting | yes | yes |
+| Optional `autojump`, `direnv`, and fzf bindings | detected at startup | detected at startup |
+
+The profile-specific details and source order are in
+[`docs/profiles.md`](docs/profiles.md). The module-to-capability table is in
+[`docs/customization.md`](docs/customization.md).
+
+## Measured startup cost
+
+The following values are the fastest result from nine post-warm-up samples on
+one Apple M1 Max running Darwin arm64 with Zsh 5.9. `first prompt` uses a real
+PTY and includes deferred hooks; `zsh -i -c exit` does not reach a prompt.
+
+| Configuration | First prompt | `zsh -i -c exit` |
+|---|---:|---:|
+| Bare Zsh, no `.zshrc` | 17 ms | 19 ms |
+| Classic profile | 215 ms | 124 ms |
+| Pure profile | 544 ms | 124 ms |
+
+The complete interactive-shell inventory for Classic differed from bare Zsh by
+233 aliases, 2,128 functions, 108 widgets, 33 key-binding lines, and 1,975
+completion definitions in the same sandbox. Those are shell-surface diffs, not
+claims that each name belongs uniquely to one plugin.
+
+See [`docs/measurement.md`](docs/measurement.md) for commands, sampling rules,
+sandbox details, and the raw JSON produced by the tools.
+
+## Repository layout
+
+```text
+README.md                 illustrated overview and measured headline
+install_zsh.sh            copy/link installer and updater
+profiles/classic/         Powerlevel10k profile and Fastfetch assets
+profiles/pure/            Pure prompt profile and notes
+docs/                     subsystem write-ups and measurement method
+tools/                    standard-library measurement scripts and results
+```
+
+## Known limitations
+
+- The full installer was not verified to completion in this environment. An
+  inherited `ZSH` variable can make the Oh My Zsh bootstrap target an existing
+  checkout outside the temporary home; the observed case is documented in
+  [`docs/BUGS-FOUND.md`](docs/BUGS-FOUND.md).
+- Installation and updates need network access. Optional package installation
+  is apt-based, and changing the login shell depends on `chsh` permissions.
+- `--link` requires the repository to remain at the same path. `--copy` avoids
+  that coupling but must be rerun after profile changes.
+- The profiles defer plugin sources until the first prompt. The noninteractive
+  `zsh -i -c exit` number therefore understates the interactive first-prompt
+  cost.
+- The startup results use shallow external checkouts in a temporary sandbox;
+  plugin revisions and machine load can change the timings.
+- No terminal animation is shipped. The diagrams are Mermaid source diagrams;
+  no real installer transcript was captured for an animation.
+
+More detail is indexed in [`docs/README.md`](docs/README.md).

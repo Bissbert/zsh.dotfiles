@@ -1,59 +1,86 @@
-# Installation Guide
+[← back to the overview](../README.md)
 
-This document explains how to run `install_zsh.sh` and what happens behind the scenes.
+# Installation and updates
 
-## Prerequisites
-- **System packages:** `bash`, `curl`, `git`, `zsh`.
-- **Permissions:** Ability to run `chsh` (optional) and install packages via `apt`/`apt-get` with `sudo` if you want the script to install `autojump` and `direnv` for you.
-- **Network access:** Required to download Oh My Zsh, Powerlevel10k, plugins, and fonts.
+`install_zsh.sh` prepares the external Oh My Zsh tree, deploys one tracked
+profile, and records what it did. It accepts `--copy` or `--link`, plus
+`--profile <name>`.
 
-## Initial Setup
-1. Clone or symlink this repository into your dotfiles directory: `git clone <repo-url> ~/dotfiles/zsh`.
-2. (Optional) Commit any local modifications so they travel to other machines.
+## Preconditions
 
-## Running the Installer
-```bash
-cd ~/dotfiles/zsh
-bash install_zsh.sh                # copies by default (classic profile)
-bash install_zsh.sh --link         # symlinks templates from the repo
-bash install_zsh.sh --profile pure # deploy the Pure profile instead of Powerlevel10k
-bash install_zsh.sh --help         # usage information
+The script checks for `curl`, `git`, `zsh`, `tar`, and `find`. Network access is
+needed for Oh My Zsh, themes, plugins, fonts, and the optional Fastfetch
+download. The optional package path is apt-based, and `chsh` may require local
+permission.
+
+```mermaid
+flowchart TD
+    A["parse arguments"] --> B["resolve profiles/<name>"]
+    B --> C["check required commands"]
+    C --> D["make ~/.zsh-backups/<br/>timestamp directory"]
+    D --> E["update or clone<br/>Oh My Zsh"]
+    E --> F["update or clone<br/>themes and plugins"]
+    F --> G["try optional tools<br/>fonts and Fastfetch"]
+    G --> H["deploy prompt config<br/>and .zshrc"]
+    H --> I["install classic logo<br/>when present"]
+    I --> J["write manifest<br/>try chsh"]
+
+    style C fill:#1f6feb,stroke:#58a6ff,color:#fff
+    style H fill:#238636,stroke:#3fb950,color:#fff
+    style J fill:#8250df,stroke:#bc8cff,color:#fff
 ```
 
-### What the Script Does
-1. Ensures required commands exist (`curl`, `git`, `zsh`).
-2. Creates a timestamped backup directory under `~/.zsh-backups/<timestamp>/`.
-3. Installs or updates Oh My Zsh to `~/.oh-my-zsh`.
-4. Installs or updates Powerlevel10k to `~/.oh-my-zsh/custom/themes/powerlevel10k` and Pure to `~/.oh-my-zsh/custom/themes/pure`.
-5. Installs/updates the plugin repositories (`zsh-autosuggestions`, `zsh-completions`, `fast-syntax-highlighting`, `zsh-syntax-highlighting`, `zsh-histdb`, `fzf-tab`).
-6. Installs MesloLGS Nerd Fonts to the appropriate fonts folder and refreshes the font cache (Linux).
-7. Copies or symlinks `.zshrc` (and `.p10k.zsh` when the profile provides it) from `profiles/<name>/`.
-8. Attempts to install `autojump`, `direnv`, `sqlite3`, and `python3-pygments` (for `pygmentize`) with `apt`/`apt-get` if missing.
-9. Downloads a prebuilt Fastfetch binary from the official GitHub releases if it isn’t already on your PATH.
-10. Switches your default shell to Zsh using `chsh -s $(which zsh)` if necessary.
-11. Writes `install_manifest.txt` inside the backup folder with the timestamp, script path, repo commit hash, deployment mode, and profile name.
+## Deployment modes
 
-## Post-Installation Steps
-- Restart your terminal or run `exec zsh`.
-- Configure your terminal emulator to use **MesloLGS NF** (Regular) for best glyph coverage.
-- Verify the prompt: for the classic profile you’ll see the Powerlevel10k single-line layout; for the pure profile you’ll see Pure’s async prompt.
+`--copy` is the default. Before replacing a destination, `deploy_file` copies
+the existing file into the timestamped backup directory, removes the
+destination, and copies the selected template into place.
 
-## Re-running Safely
-Re-run the script at any time; it will back up current files before applying updates. When using `--link`, ensure the repo path remains unchanged so symlinks stay valid.
+`--link` performs the same backup, then creates a symlink from the destination
+to the template in this checkout. Keep the checkout at a stable path and make
+profile edits in the repository.
 
-## Rollback
-All replaced files are stored in `~/.zsh-backups/<timestamp>/`. To revert:
-1. Move or remove the current `~/.zshrc` / `~/.p10k.zsh`.
-2. Copy the desired backup versions back into place.
-3. Re-run `exec zsh`.
+The deployed files are:
 
-## Updating Across Machines
-- Commit changes to the repository (especially within `profiles/<name>/`).
-- On a new machine, clone the repo and run `bash install_zsh.sh --link` to pick up identical configuration.
+| Profile | `.zshrc` source | Prompt file | Fastfetch asset |
+|---|---|---|---|
+| classic | `profiles/classic/zshrc` | `profiles/classic/p10k.zsh` → `~/.p10k.zsh` | `fastfetch_logo.txt` |
+| pure | `profiles/pure/zshrc` | no new Powerlevel10k file | none |
 
-## Troubleshooting
-- **Fonts still wrong:** Some terminal apps require closing/relaunching after adding new fonts. On Linux, run `fc-cache -f ~/.local/share/fonts` manually if needed.
-- **`apt` unavailable:** The script falls back to warnings; install `autojump`, `direnv`, `sqlite3`, and `Pygments` (`pygmentize`) using your system’s package manager (brew, dnf, pacman, etc.). Fastfetch is fetched directly from GitHub releases when possible; otherwise download it manually from https://github.com/fastfetch-cli/fastfetch/releases.
-- **`chsh` fails:** Run `sudo chsh -s $(which zsh) $USER` or adjust `/etc/passwd` with admin assistance.
+When Pure is selected and a `.p10k.zsh` already exists, the installer leaves it
+in place. The classic profile can back up and replace the Fastfetch logo; it also
+creates a default Fastfetch config only when one is absent.
 
-Happy hacking!
+## Update behavior
+
+Existing Git checkouts are updated with `git pull --ff-only`. Missing checkouts
+are shallow clones from the upstream URLs embedded in the installer. Plugin
+installation is best-effort only for the optional external tools: missing
+`autojump`, `direnv`, `sqlite3`, and `pygmentize` produce a warning when apt is
+not available or installation fails. Missing Fastfetch follows its own release
+download path and also produces a warning on failure.
+
+## Running it
+
+```sh
+cd ~/dotfiles/zsh.dotfiles
+bash install_zsh.sh --copy
+bash install_zsh.sh --link
+bash install_zsh.sh --profile pure --link
+bash install_zsh.sh --help
+```
+
+The help command and syntax checks were run for this documentation pass. The
+full install was attempted only with a temporary `HOME`; it stopped in the Oh
+My Zsh bootstrap because of an inherited `ZSH` variable. The behavior and
+reproduction are recorded in [`BUGS-FOUND.md`](BUGS-FOUND.md), and the source
+was not changed.
+
+## Backing out
+
+The installer writes `install_manifest.txt` inside the backup directory with
+the timestamp, script path, repository commit, deployment mode, and profile.
+To back out a deployment, remove or move the current `.zshrc` and
+`.p10k.zsh`, then copy the desired files from the recorded backup directory
+back into place. Restore the Fastfetch logo from the same backup when it was
+replaced, then start a new shell.
