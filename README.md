@@ -33,9 +33,11 @@ bash install_zsh.sh --link
 The help command, shell syntax checks, and the measurement harness were run for
 this pass. The full installer command was also attempted in an isolated home,
 but did not complete because an inherited `ZSH` environment variable made the
-Oh My Zsh bootstrap select the real home checkout. See
-[`docs/BUGS-FOUND.md`](docs/BUGS-FOUND.md) and the limitation below. The command
-above is therefore source-defined but untested to completion here.
+Oh My Zsh bootstrap select the real home checkout. That defect has since been
+fixed on the default branch: the bootstrap is now passed the installer's own
+target. The end-to-end run was not repeated afterwards, so the command above is
+still source-defined but untested to completion here. See
+[`docs/BUGS-FOUND.md`](docs/BUGS-FOUND.md) and the limitation below.
 
 Use `--copy` instead of `--link` for independent deployed files, or select the
 Pure prompt with `--profile pure`:
@@ -157,10 +159,10 @@ tools/                    standard-library measurement scripts and results
 
 ## Known limitations
 
-- The full installer was not verified to completion in this environment. An
-  inherited `ZSH` variable can make the Oh My Zsh bootstrap target an existing
-  checkout outside the temporary home; the observed case is documented in
-  [`docs/BUGS-FOUND.md`](docs/BUGS-FOUND.md).
+- The full installer was not verified to completion in this environment. The
+  inherited-`ZSH` defect that blocked the attempt has been fixed on the default
+  branch, but the end-to-end run was not repeated; the observed case is
+  documented in [`docs/BUGS-FOUND.md`](docs/BUGS-FOUND.md).
 - Installation and updates need network access. Optional package installation
   is apt-based, and changing the login shell depends on `chsh` permissions.
 - `--link` requires the repository to remain at the same path. `--copy` avoids
