@@ -146,8 +146,9 @@ sandbox details, and the raw JSON produced by the tools.
 
 `tests/run.sh` runs 27 offline tests of the installer: argument handling,
 `--copy` and `--link` deploys, backups and the manifest, the update path,
-`ZDOTDIR`, Fastfetch, optional tools, both profiles, and a regression test for
-each entry in [bugs found](docs/BUGS-FOUND.md). Each test uses a temporary
+`ZDOTDIR`, Fastfetch, optional tools, both profiles, and regression tests for
+the exported-`ZSH` fix ([`3627c9e`](https://github.com/Bissbert/zsh.dotfiles/commit/3627c9e)) and the Pure install fix
+([#5](https://github.com/Bissbert/zsh.dotfiles/issues/5)). Each test uses a temporary
 `HOME`, and `curl`, `git clone`/`pull`, `chsh`, `apt-get` and `sudo` are
 replaced by the stubs in `tests/stubs`, so nothing outside that directory
 changes and no network is needed. Run it in a Debian container:

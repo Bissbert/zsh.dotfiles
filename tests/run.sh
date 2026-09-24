@@ -244,7 +244,7 @@ test_pure_keeps_existing_p10k() {
   assert_contains "$OUT" 'existing file left in place' "log line"
 }
 
-# --- Oh My Zsh bootstrap (bug 1, fixed in 3627c9e) ---------------------------
+# --- Oh My Zsh bootstrap (fixed in 3627c9e) ----------------------------------
 
 test_exported_zsh_does_not_redirect_bootstrap() {
   mkdir -p "$T/other-omz"

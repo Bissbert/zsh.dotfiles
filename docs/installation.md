@@ -72,9 +72,7 @@ bash install_zsh.sh --help
 
 The classic `--link` install, a re-run over it, and the Pure `--copy` install
 were run in a Debian 12 container ([measurement](measurement.md)). All three
-exit 0 and write `install_manifest.txt`. The Pure install used to stop before
-the default-shell and manifest steps (bug 2, fixed).
-An exported `ZSH` no longer redirects the Oh My Zsh bootstrap (bug 1, fixed).
+exit 0 and write `install_manifest.txt`.
 
 ## Backing out
 

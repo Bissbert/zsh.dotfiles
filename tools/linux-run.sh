@@ -43,7 +43,7 @@ zsh -n profiles/classic/zshrc; echo "zsh -n profiles/classic/zshrc exit=$?"
 zsh -n profiles/pure/zshrc; echo "zsh -n profiles/pure/zshrc exit=$?"
 bash install_zsh.sh --help; echo "--help exit=$?"
 
-section "bug 1: exported ZSH points at another Oh My Zsh checkout"
+section "exported ZSH points at another Oh My Zsh checkout"
 git clone -q --depth=1 https://github.com/ohmyzsh/ohmyzsh.git /opt/other-omz
 h=/home/bug1; mkdir -p "$h"
 ZSH=/opt/other-omz HOME="$h" ZDOTDIR="$h" SHELL="$(command -v zsh)" \

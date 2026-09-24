@@ -23,7 +23,7 @@ Usage: install_zsh.sh [--copy|--link] [--profile <name>] [--help]
 --help        Show this help message and exit.
 --help exit=0
 
-=== bug 1: exported ZSH points at another Oh My Zsh checkout
+=== exported ZSH points at another Oh My Zsh checkout
 install exit=0
 lines with "folder already exists": 0
 Oh My Zsh in the target home: yes

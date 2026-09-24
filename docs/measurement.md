@@ -22,7 +22,7 @@ flowchart LR
     A["git clone<br/>in the container"] --> B["install_zsh.sh<br/>classic, re-run, pure"]
     A --> C["bench_startup.py"]
     A --> D["inventory.py"]
-    B --> E["BUGS-FOUND.md<br/>installation.md"]
+    B --> E["installation.md"]
     C --> F["README startup table"]
     D --> F
 
@@ -66,10 +66,10 @@ shell.` is printed. A second timestamped backup directory is created.
 
 **Pure, `--copy`, empty home:** exit 0. `.zshrc` is a regular file, no
 `.p10k.zsh` is written, the manifest records `mode=copy` and `profile=pure`,
-and the shell starts (entry 2 in [Bugs found](BUGS-FOUND.md)).
+and the shell starts.
 
 **Exported `ZSH`:** with `ZSH` pointing at another Oh My Zsh checkout, the
-install goes to the target home and leaves the other checkout alone (entry 1).
+install goes to the target home and leaves the other checkout alone.
 
 The printed hints to install `autojump`, `direnv`, `sqlite3` and Pygments
 manually appear on every run, including when the tools are installed.
