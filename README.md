@@ -35,9 +35,7 @@ second run over the same home (the update path). The run is described in
 [`docs/measurement.md`](docs/measurement.md).
 
 Use `--copy` instead of `--link` for independent deployed files, or select the
-Pure prompt with `--profile pure`. The Pure install deploys its files but exits
-1 before changing the login shell and writing the manifest
-([bug 2](docs/BUGS-FOUND.md#2-the-pure-install-exits-1-before-the-default-shell-and-manifest-steps)):
+Pure prompt with `--profile pure`:
 
 ```sh
 bash install_zsh.sh --copy
@@ -133,8 +131,8 @@ prompt.
 | Configuration | First prompt | `zsh -i -c exit` |
 |---|---:|---:|
 | Bare Zsh, no `.zshrc` | 3 ms | 4 ms |
-| Classic profile | 106 ms | 65 ms |
-| Pure profile | 451 ms | 65 ms |
+| Classic profile | 109 ms | 65 ms |
+| Pure profile | 462 ms | 64 ms |
 
 The complete interactive-shell inventory for Classic differed from bare Zsh by
 233 aliases, 2,118 functions, 106 widgets, 33 key-binding lines, and 1,966
@@ -144,6 +142,21 @@ claims that each name belongs uniquely to one plugin.
 See [`docs/measurement.md`](docs/measurement.md) for commands, sampling rules,
 sandbox details, and the raw JSON produced by the tools.
 
+## Tests
+
+`tests/run.sh` runs 27 offline tests of the installer: argument handling,
+`--copy` and `--link` deploys, backups and the manifest, the update path,
+`ZDOTDIR`, Fastfetch, optional tools, both profiles, and a regression test for
+each entry in [bugs found](docs/BUGS-FOUND.md). Each test uses a temporary
+`HOME`, and `curl`, `git clone`/`pull`, `chsh`, `apt-get` and `sudo` are
+replaced by the stubs in `tests/stubs`, so nothing outside that directory
+changes and no network is needed. Run it in a Debian container:
+
+```sh
+sh tests/docker.sh            # all tests
+sh tests/docker.sh pure       # tests whose name contains "pure"
+```
+
 ## Repository layout
 
 ```text
@@ -152,14 +165,12 @@ install_zsh.sh            copy/link installer and updater
 profiles/classic/         Powerlevel10k profile and Fastfetch assets
 profiles/pure/            Pure prompt profile and notes
 docs/                     subsystem write-ups and measurement method
+tests/                    offline installer tests, stubs and Docker runner
 tools/                    measurement scripts, results and the Linux run
 ```
 
 ## Known limitations
 
-- The Pure install exits 1 after deploying its files, so it does not change
-  the login shell or write `install_manifest.txt`
-  ([bug 2](docs/BUGS-FOUND.md#2-the-pure-install-exits-1-before-the-default-shell-and-manifest-steps)).
 - Only the Linux path has been run, as root in a container. The macOS font
   path and a `sudo`-based install have not been run.
 - Installation and updates need network access. Optional package installation

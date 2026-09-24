@@ -13,7 +13,7 @@ published numbers to the scripts in `tools/`.
 | Customization | [`customization.md`](customization.md) | What the completion, history, prompt, and plugin modules provide. |
 | Startup profiling | [`profiling.md`](profiling.md) | `zprof`, first-prompt timing, and ablation measurements. |
 | Measurement | [`measurement.md`](measurement.md) | The Linux container run behind every published number. |
-| Bugs found | [`BUGS-FOUND.md`](BUGS-FOUND.md) | One fixed bug with its commit, and one open bug. |
+| Bugs found | [`BUGS-FOUND.md`](BUGS-FOUND.md) | Two fixed bugs, each with its commit. |
 
 The measurement scripts are in [`../tools/`](../tools). They use only Python’s
 standard library and write their JSON results beside themselves.

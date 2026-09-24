@@ -64,10 +64,9 @@ commit. `zsh -i -c` with the deployed profile exits 0 with no stderr output.
 plugins take the `git pull --ff-only` path, and `Zsh is already the default
 shell.` is printed. A second timestamped backup directory is created.
 
-**Pure, `--copy`, empty home:** `.zshrc` is a regular file, no `.p10k.zsh` is
-written, and the shell starts. The installer then exits 1 before the
-default-shell and manifest steps; that is entry 2 in
-[Bugs found](BUGS-FOUND.md).
+**Pure, `--copy`, empty home:** exit 0. `.zshrc` is a regular file, no
+`.p10k.zsh` is written, the manifest records `mode=copy` and `profile=pure`,
+and the shell starts (entry 2 in [Bugs found](BUGS-FOUND.md)).
 
 **Exported `ZSH`:** with `ZSH` pointing at another Oh My Zsh checkout, the
 install goes to the target home and leaves the other checkout alone (entry 1).
@@ -98,19 +97,19 @@ The headline is the minimum sample, rounded to milliseconds:
 | Configuration | First prompt | `zsh -i -c exit` |
 |---|---:|---:|
 | Bare Zsh, no `.zshrc` | 3 ms | 4 ms |
-| Classic profile | 106 ms | 65 ms |
-| Pure profile | 451 ms | 65 ms |
+| Classic profile | 109 ms | 65 ms |
+| Pure profile | 462 ms | 64 ms |
 
 The run took place after the installer runs, so `autojump`, `direnv`, `sqlite3`
 and `pygmentize` were on `PATH`; `fastfetch` and `fzf` were not. The JSON
 records this under `host.optional_tools`.
 
 The Pure first-prompt number does not break down by block. Removing any one
-of the six ablated blocks brings the first prompt down to 39–62 ms, so the
-"cost" column for Pure attributes about 390 ms to every block. The committed
+of the six ablated blocks brings the first prompt down to 40–64 ms, so the
+"cost" column for Pure attributes about 400 ms to every block. The committed
 tools do not explain this, and the per-block Pure figures are not published as
 costs. The same pattern is in the earlier macOS results. For Classic, the
-largest ablation is Oh My Zsh core at +72 ms; the full list is in the capture.
+largest ablation is Oh My Zsh core at +73 ms; the full list is in the capture.
 
 ## Shell inventory
 

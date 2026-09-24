@@ -2,14 +2,14 @@
 
 # Bugs found
 
-One bug was reproduced, reviewed and fixed on `main`. A second turned up when
-the installer was run end to end in a Linux container (see
-[How this was measured](measurement.md)); it is still open.
+Both bugs are fixed. The second turned up when the installer was run end to end
+in a Linux container (see [How this was measured](measurement.md)). Each has a
+regression test in [`tests/run.sh`](../tests/run.sh).
 
 | # | Entry | Status |
 |---|---|---|
 | 1 | Oh My Zsh bootstrap inherits an unrelated `ZSH` variable | Fixed in [`3627c9e`](https://github.com/Bissbert/zsh.dotfiles/commit/3627c9e) |
-| 2 | The Pure install exits 1 before the default shell and manifest steps | Open |
+| 2 | The Pure install exits 1 before the default shell and manifest steps | Fixed in [`8bce836`](https://github.com/Bissbert/zsh.dotfiles/commit/8bce836) |
 
 The checks below run inside the container that
 [`tools/linux-run.sh`](../tools/linux-run.sh) sets up (`python:3.12-slim-bookworm`,
@@ -23,11 +23,12 @@ flowchart TD
     C --> D["install_p10k_config<br/>install_zshrc"]
     D --> E{"profile has<br/>fastfetch_logo.txt?"}
     E -->|classic: yes| F["ensure_default_shell<br/>write_manifest"]
-    E -->|pure: no| X["return 1 under set -e<br/>exit 1 (entry 2)"]
+    E -->|pure: no| G["return 0<br/>(entry 2, fixed)"]
+    G --> F
 
     style B fill:#238636,stroke:#3fb950,color:#fff
     style F fill:#238636,stroke:#3fb950,color:#fff
-    style X fill:#da3633,stroke:#f85149,color:#fff
+    style G fill:#238636,stroke:#3fb950,color:#fff
 ```
 
 ## 1. Oh My Zsh bootstrap inherits an unrelated `ZSH` variable
@@ -66,16 +67,17 @@ themes added to the exported checkout: 0
 
 ## 2. The Pure install exits 1 before the default shell and manifest steps
 
-**Status:** open. Found in the Linux run.
+**Status:** fixed in [`8bce836`](https://github.com/Bissbert/zsh.dotfiles/commit/8bce836) ([#5](https://github.com/Bissbert/zsh.dotfiles/issues/5)).
 
 **File:** `install_zsh.sh:365` (`install_fastfetch_logo`)
 
-**What happens:** `install_fastfetch_logo` starts with
+**What happened:** `install_fastfetch_logo` started with
 `[[ -f "${template}" ]] || return`. The Pure profile has no
-`fastfetch_logo.txt`, so the test fails and `return` passes on its status 1.
-The script runs with `set -e`, so it stops there. `.zshrc` has already been
-deployed and the shell starts, but `ensure_default_shell` and `write_manifest`
-never run, no "Installation complete" line is printed, and the exit status is 1:
+`fastfetch_logo.txt`, so the test failed and `return` passed on its status 1.
+The script runs with `set -e`, so it stopped there. `.zshrc` had already been
+deployed and the shell started, but `ensure_default_shell` and `write_manifest`
+never ran, no "Installation complete" line was printed, and the exit status was
+1. Output before the fix:
 
 ```sh
 HOME=/home/pure SHELL="$(command -v zsh)" bash install_zsh.sh --profile pure --copy
@@ -92,7 +94,22 @@ install_manifest.txt files: 0
 + return
 ```
 
-Without the manifest, the backup directory does not record which profile and
-commit were deployed, and a caller that checks the exit status sees a failure.
+Without the manifest, the backup directory did not record which profile and
+commit were deployed, and a caller that checked the exit status saw a failure.
 
-**Possible fix:** `[[ -f "${template}" ]] || return 0`.
+**What changed:** the guard is `[[ -f "${template}" ]] || return 0`, so a
+profile without a logo skips the step and the install continues.
+
+**Check:** `test_pure_install_completes`, `test_pure_install_changes_default_shell`
+and `test_pure_keeps_existing_p10k` in [`tests/run.sh`](../tests/run.sh) fail
+with the old `return` and pass with the fix. The Linux run now shows:
+
+```
+install exit=0
+"Installation complete" printed: 1
+install_manifest.txt files: 1
+mode=copy
+profile=pure
+```
+
+Entry 1 is covered by `test_exported_zsh_does_not_redirect_bootstrap`.
