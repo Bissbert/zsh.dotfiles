@@ -71,11 +71,8 @@ bash install_zsh.sh --help
 ```
 
 The classic `--link` install, a re-run over it, and the Pure `--copy` install
-were run in a Debian 12 container ([measurement](measurement.md)). The classic
-runs exit 0. The Pure install deploys `.zshrc` and then exits 1 before the
-default-shell and manifest steps
-([bug 2](BUGS-FOUND.md#2-the-pure-install-exits-1-before-the-default-shell-and-manifest-steps)).
-An exported `ZSH` no longer redirects the Oh My Zsh bootstrap (bug 1, fixed).
+were run in a Debian 12 container ([measurement](measurement.md)). All three
+exit 0 and write `install_manifest.txt`.
 
 ## Backing out
 

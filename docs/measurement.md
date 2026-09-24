@@ -22,7 +22,7 @@ flowchart LR
     A["git clone<br/>in the container"] --> B["install_zsh.sh<br/>classic, re-run, pure"]
     A --> C["bench_startup.py"]
     A --> D["inventory.py"]
-    B --> E["BUGS-FOUND.md<br/>installation.md"]
+    B --> E["installation.md"]
     C --> F["README startup table"]
     D --> F
 
@@ -64,13 +64,12 @@ commit. `zsh -i -c` with the deployed profile exits 0 with no stderr output.
 plugins take the `git pull --ff-only` path, and `Zsh is already the default
 shell.` is printed. A second timestamped backup directory is created.
 
-**Pure, `--copy`, empty home:** `.zshrc` is a regular file, no `.p10k.zsh` is
-written, and the shell starts. The installer then exits 1 before the
-default-shell and manifest steps; that is entry 2 in
-[Bugs found](BUGS-FOUND.md).
+**Pure, `--copy`, empty home:** exit 0. `.zshrc` is a regular file, no
+`.p10k.zsh` is written, the manifest records `mode=copy` and `profile=pure`,
+and the shell starts.
 
 **Exported `ZSH`:** with `ZSH` pointing at another Oh My Zsh checkout, the
-install goes to the target home and leaves the other checkout alone (entry 1).
+install goes to the target home and leaves the other checkout alone.
 
 The printed hints to install `autojump`, `direnv`, `sqlite3` and Pygments
 manually appear on every run, including when the tools are installed.
@@ -97,20 +96,23 @@ The headline is the minimum sample, rounded to milliseconds:
 
 | Configuration | First prompt | `zsh -i -c exit` |
 |---|---:|---:|
-| Bare Zsh, no `.zshrc` | 3 ms | 4 ms |
-| Classic profile | 106 ms | 65 ms |
-| Pure profile | 451 ms | 65 ms |
+| Bare Zsh, no `.zshrc` | 9 ms | 23 ms |
+| Classic profile | 604 ms | 209 ms |
+| Pure profile | 2931 ms | 225 ms |
+
+The Docker VM was under other load during this capture, so the absolute times
+are several times higher than on an idle host; compare rows within one run.
 
 The run took place after the installer runs, so `autojump`, `direnv`, `sqlite3`
 and `pygmentize` were on `PATH`; `fastfetch` and `fzf` were not. The JSON
 records this under `host.optional_tools`.
 
 The Pure first-prompt number does not break down by block. Removing any one
-of the six ablated blocks brings the first prompt down to 39–62 ms, so the
-"cost" column for Pure attributes about 390 ms to every block. The committed
+of the six ablated blocks brings the first prompt down to 233–396 ms, so the
+"cost" column for Pure attributes about 2.5–2.7 s to every block. The committed
 tools do not explain this, and the per-block Pure figures are not published as
 costs. The same pattern is in the earlier macOS results. For Classic, the
-largest ablation is Oh My Zsh core at +72 ms; the full list is in the capture.
+largest ablation is Oh My Zsh core at +463 ms; the full list is in the capture.
 
 ## Shell inventory
 

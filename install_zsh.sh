@@ -362,7 +362,7 @@ install_fastfetch_logo() {
   backup_dir="$2"
   template="$3"
 
-  [[ -f "${template}" ]] || return
+  [[ -f "${template}" ]] || return 0
 
   config_dir="${XDG_CONFIG_HOME:-${home_dir}/.config}/fastfetch"
   dest="${config_dir}/logo.txt"
