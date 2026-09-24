@@ -30,14 +30,9 @@ bash install_zsh.sh --help
 bash install_zsh.sh --link
 ```
 
-The help command, shell syntax checks, and the measurement harness were run for
-this pass. The full installer command was also attempted in an isolated home,
-but did not complete because an inherited `ZSH` environment variable made the
-Oh My Zsh bootstrap select the real home checkout. That defect has since been
-fixed on the default branch: the bootstrap is now passed the installer's own
-target. The end-to-end run was not repeated afterwards, so the command above is
-still source-defined but untested to completion here. See
-[`docs/BUGS-FOUND.md`](docs/BUGS-FOUND.md) and the limitation below.
+Both commands above were run to completion in a Debian 12 container, as was a
+second run over the same home (the update path). The run is described in
+[`docs/measurement.md`](docs/measurement.md).
 
 Use `--copy` instead of `--link` for independent deployed files, or select the
 Pure prompt with `--profile pure`:
@@ -126,43 +121,62 @@ The profile-specific details and source order are in
 [`docs/profiles.md`](docs/profiles.md). The module-to-capability table is in
 [`docs/customization.md`](docs/customization.md).
 
-## Measured startup cost
+## Startup cost
 
-The following values are the fastest result from nine post-warm-up samples on
-one Apple M1 Max running Darwin arm64 with Zsh 5.9. `first prompt` uses a real
-PTY and includes deferred hooks; `zsh -i -c exit` does not reach a prompt.
+The following values are the fastest of nine samples after a warm-up round, in
+a Debian 12 container (Docker Desktop VM, aarch64) with Zsh 5.9. `first prompt`
+uses a real PTY and includes deferred hooks; `zsh -i -c exit` does not reach a
+prompt.
 
 | Configuration | First prompt | `zsh -i -c exit` |
 |---|---:|---:|
-| Bare Zsh, no `.zshrc` | 17 ms | 19 ms |
-| Classic profile | 215 ms | 124 ms |
-| Pure profile | 544 ms | 124 ms |
+| Bare Zsh, no `.zshrc` | 9 ms | 23 ms |
+| Classic profile | 604 ms | 209 ms |
+| Pure profile | 2931 ms | 225 ms |
+
+The Docker VM was under other load during this capture, so the absolute times
+are several times higher than on an idle host; compare rows within one run.
 
 The complete interactive-shell inventory for Classic differed from bare Zsh by
-233 aliases, 2,128 functions, 108 widgets, 33 key-binding lines, and 1,975
+233 aliases, 2,118 functions, 106 widgets, 33 key-binding lines, and 1,966
 completion definitions in the same sandbox. Those are shell-surface diffs, not
 claims that each name belongs uniquely to one plugin.
 
 See [`docs/measurement.md`](docs/measurement.md) for commands, sampling rules,
 sandbox details, and the raw JSON produced by the tools.
 
+## Tests
+
+`tests/run.sh` runs 27 offline tests of the installer: argument handling,
+`--copy` and `--link` deploys, backups and the manifest, the update path,
+`ZDOTDIR`, Fastfetch, optional tools, both profiles, and regression tests for
+the exported-`ZSH` fix ([`3627c9e`](https://github.com/Bissbert/zsh.dotfiles/commit/3627c9e)) and the Pure install fix
+([#5](https://github.com/Bissbert/zsh.dotfiles/issues/5)). Each test uses a temporary
+`HOME`, and `curl`, `git clone`/`pull`, `chsh`, `apt-get` and `sudo` are
+replaced by the stubs in `tests/stubs`, so nothing outside that directory
+changes and no network is needed. Run it in a Debian container:
+
+```sh
+sh tests/docker.sh            # all tests
+sh tests/docker.sh pure       # tests whose name contains "pure"
+```
+
 ## Repository layout
 
 ```text
-README.md                 illustrated overview and measured headline
+README.md                 illustrated overview and startup results
 install_zsh.sh            copy/link installer and updater
 profiles/classic/         Powerlevel10k profile and Fastfetch assets
 profiles/pure/            Pure prompt profile and notes
 docs/                     subsystem write-ups and measurement method
-tools/                    standard-library measurement scripts and results
+tests/                    offline installer tests, stubs and Docker runner
+tools/                    measurement scripts, results and the Linux run
 ```
 
 ## Known limitations
 
-- The full installer was not verified to completion in this environment. The
-  inherited-`ZSH` defect that blocked the attempt has been fixed on the default
-  branch, but the end-to-end run was not repeated; the observed case is
-  documented in [`docs/BUGS-FOUND.md`](docs/BUGS-FOUND.md).
+- Only the Linux path has been run, as root in a container. The macOS font
+  path and a `sudo`-based install have not been run.
 - Installation and updates need network access. Optional package installation
   is apt-based, and changing the login shell depends on `chsh` permissions.
 - `--link` requires the repository to remain at the same path. `--copy` avoids
@@ -171,8 +185,11 @@ tools/                    standard-library measurement scripts and results
   `zsh -i -c exit` number therefore understates the interactive first-prompt
   cost.
 - The startup results use shallow external checkouts in a temporary sandbox;
-  plugin revisions and machine load can change the timings.
+  plugin revisions and machine load can change the timings. The Pure
+  first-prompt time does not break down into per-block costs; see
+  [`docs/measurement.md`](docs/measurement.md#startup-benchmark).
 - No terminal animation is shipped. The diagrams are Mermaid source diagrams;
-  no real installer transcript was captured for an animation.
+  the installer output is in
+  [`docs/captures/linux-run.txt`](docs/captures/linux-run.txt).
 
 More detail is indexed in [`docs/README.md`](docs/README.md).

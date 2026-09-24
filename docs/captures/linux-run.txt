@@ -1,0 +1,175 @@
+
+=== environment
+Linux 6.5.11-linuxkit aarch64
+Debian GNU/Linux 12 (bookworm)
+zsh 5.9 (aarch64-unknown-linux-gnu)
+GNU bash, version 5.2.15(1)-release (aarch64-unknown-linux-gnu)
+Python 3.12.14
+repo HEAD: 6e1fd9c Docs: drop BUGS-FOUND.md, bugs are tracked as issues
+
+=== offline test suite (tests/run.sh)
+exit=0
+27 passed, 0 failed
+
+=== syntax checks
+bash -n install_zsh.sh exit=0
+zsh -n profiles/classic/zshrc exit=0
+zsh -n profiles/pure/zshrc exit=0
+Usage: install_zsh.sh [--copy|--link] [--profile <name>] [--help]
+
+--copy        Copy profile files into place (default).
+--link        Symlink profile files from the repository.
+--profile     Profile name under profiles/ to deploy (default: classic).
+--help        Show this help message and exit.
+--help exit=0
+
+=== exported ZSH points at another Oh My Zsh checkout
+install exit=0
+lines with "folder already exists": 0
+Oh My Zsh in the target home: yes
+themes added to the exported checkout: 0
+
+=== full install: classic profile, --link
+install exit=0
+[INFO] Installing Oh My Zsh...
+[INFO] Setting up Powerlevel10k...
+[INFO] Setting up Pure prompt...
+[INFO] Downloading fastfetch from https://github.com/fastfetch-cli/fastfetch/releases/latest/download/fastfetch-linux-aarch64.tar.gz
+[WARN] fastfetch installed to /home/classic/.local/bin, but the directory is not in PATH. Add 'export PATH="/home/classic/.local/bin:$PATH"' to your shell init.
+[INFO] Default shell changed to /usr/bin/zsh.
+[INFO] Backups stored in /home/classic/.zsh-backups/20260924-141602
+[INFO] Installation complete. Set MesloLGS NF in your terminal profile to finish setup.
+[HINT] Install autojump manually if needed: sudo apt install autojump
+[HINT] Install direnv manually if needed: sudo apt install direnv
+[HINT] Install sqlite3 manually if needed: sudo apt install sqlite3
+[HINT] Install Pygments manually if needed: sudo apt install python3-pygments
+[HINT] Download fastfetch manually if needed: https://github.com/fastfetch-cli/fastfetch/releases
+fonts downloaded: 4
+plugins cloned: 6
+.zshrc -> /work/zsh.dotfiles/profiles/classic/zshrc
+.p10k.zsh -> /work/zsh.dotfiles/profiles/classic/p10k.zsh
+fastfetch logo: present
+autojump    /usr/bin/autojump
+direnv      /usr/bin/direnv
+sqlite3     /usr/bin/sqlite3
+pygmentize  /usr/bin/pygmentize
+fastfetch   fastfetch 2.68.1 (aarch64)
+root login shell: /usr/bin/zsh
+--- install_manifest.txt
+timestamp=<run time>
+script_path=install_zsh.sh
+repo_root=/work/zsh.dotfiles
+git_commit=6e1fd9c51900539fa4961770a13b44bf4d6b779d
+mode=link
+profile=classic
+--- zsh -i -c exit with the deployed profile
+ZSH=/home/classic/.oh-my-zsh theme=powerlevel10k/powerlevel10k
+exit=0 stderr lines=0
+
+=== re-run over the classic install (update path)
+install exit=0
+      1 [INFO] Backups stored in /home/classic/.zsh-backups/20260924-141629
+      1 [INFO] Oh My Zsh already present. Updating...
+      1 [INFO] Setting up Powerlevel10k...
+      1 [INFO] Setting up Pure prompt...
+      1 [INFO] Updating plugin fast-syntax-highlighting...
+      1 [INFO] Updating plugin fzf-tab...
+      1 [INFO] Updating plugin zsh-autosuggestions...
+      1 [INFO] Updating plugin zsh-completions...
+      1 [INFO] Updating plugin zsh-histdb...
+      1 [INFO] Updating plugin zsh-syntax-highlighting...
+      1 [INFO] Zsh is already the default shell.
+backup directories: 2
+files in the newest backup: install_manifest.txt logo.txt 
+
+=== full install: pure profile, --copy
+install exit=0
+[WARN] fastfetch installed to /home/pure/.local/bin, but the directory is not in PATH. Add 'export PATH="/home/pure/.local/bin:$PATH"' to your shell init.
+[INFO] Zsh is already the default shell.
+last log line: [HINT] Download fastfetch manually if needed: https://github.com/fastfetch-cli/fastfetch/releases
+"Installation complete" printed: 1
+install_manifest.txt files: 1
+mode=copy
+profile=pure
+.zshrc: regular file
+.p10k.zsh: absent
+ZSH=/home/pure/.oh-my-zsh
+zsh -i -c exit=0 stderr lines=0
+
+=== startup benchmark (tools/bench_startup.py --reps 9)
+
+| configuration | time to first prompt | `zsh -i -c exit` |
+|---|---:|---:|
+| bare zsh, no zshrc | 9 ms | 23 ms |
+| classic profile | 604 ms | 209 ms |
+| pure profile | 2931 ms | 225 ms |
+
+### classic -- cost per block (ablation)
+
+| removed block | first prompt without it | cost of the block |
+|---|---:|---:|
+| oh-my-zsh core | 141 ms | +463 ms |
+| all deferred plugins | 461 ms | +143 ms |
+| p10k.zsh (prompt config) | 468 ms | +136 ms |
+| syntax highlighting | 485 ms | +119 ms |
+| zsh-autosuggestions | 510 ms | +94 ms |
+| history-substring-search | 561 ms | +43 ms |
+| colorize | 563 ms | +41 ms |
+| colored-man-pages | 591 ms | +13 ms |
+| fzf-tab | 598 ms | +6 ms |
+| compinit | 603 ms | +1 ms |
+| fzf key-bindings | 628 ms | -24 ms |
+| fastfetch banner | 633 ms | -29 ms |
+| autojump + direnv | 648 ms | -44 ms |
+| zsh-histdb | 706 ms | -102 ms |
+
+### pure -- cost per block (ablation)
+
+| removed block | first prompt without it | cost of the block |
+|---|---:|---:|
+| oh-my-zsh core | 233 ms | +2698 ms |
+| all deferred plugins | 236 ms | +2695 ms |
+| pure prompt | 289 ms | +2642 ms |
+| zsh-histdb | 352 ms | +2579 ms |
+| fzf-tab | 394 ms | +2537 ms |
+| compinit | 396 ms | +2535 ms |
+exit=0
+wrote /out/results_startup.json
+
+=== shell inventory, classic (tools/inventory.py)
+
+### classic -- what each block contributes
+
+| block | aliases | functions | widgets | key bindings | completions |
+|---|---:|---:|---:|---:|---:|
+| (everything, vs. bare zsh) | 233 | 2118 | 106 | 33 | 1966 |
+| oh-my-zsh core | 230 | 764 | 66 | 14 | 0 |
+| compinit | 0 | 228 | 50 | 0 | 0 |
+| zsh-histdb | 0 | 239 | 50 | 0 | 0 |
+| fzf-tab | 0 | 258 | 56 | 2 | 0 |
+| p10k.zsh (prompt config) | 0 | 232 | 50 | 0 | 0 |
+| all deferred plugins | 3 | 372 | 67 | 2 | 0 |
+| zsh-autosuggestions | 0 | 268 | 59 | 0 | 0 |
+| syntax highlighting | 1 | 288 | 53 | 0 | 0 |
+| colored-man-pages | 0 | 233 | 50 | 0 | 0 |
+| colorize | 2 | 232 | 50 | 0 | 0 |
+| history-substring-search | 0 | 254 | 56 | 2 | 0 |
+| autojump + direnv | 0 | 236 | 50 | 0 | 0 |
+| fzf key-bindings | 0 | 228 | 50 | 0 | 0 |
+| fastfetch banner | 0 | 228 | 50 | 0 | 0 |
+exit=0
+
+=== shell inventory, pure (tools/inventory.py)
+
+### pure -- what each block contributes
+
+| block | aliases | functions | widgets | key bindings | completions |
+|---|---:|---:|---:|---:|---:|
+| (everything, vs. bare zsh) | 233 | 1788 | 100 | 33 | 1966 |
+| oh-my-zsh core | 230 | 362 | 56 | 14 | 0 |
+| compinit | 0 | 231 | 53 | 0 | 0 |
+| zsh-histdb | 0 | 242 | 53 | 0 | 0 |
+| fzf-tab | 0 | 261 | 59 | 2 | 0 |
+| pure prompt | 0 | 305 | 57 | 0 | 0 |
+| all deferred plugins | 3 | 367 | 69 | 2 | 0 |
+exit=0

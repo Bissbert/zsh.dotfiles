@@ -1,0 +1,4 @@
+#!/usr/bin/env bash
+printf 'apt-get %s\n' "$*" >>"${STUB_LOG:?}"
+[[ "apt-get" == sudo ]] && exec "$@"
+exit "${STUB_APT_STATUS:-0}"

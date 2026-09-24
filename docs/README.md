@@ -12,8 +12,7 @@ published numbers to the scripts in `tools/`.
 | Profiles | [`profiles.md`](profiles.md) | Classic and Pure load order, prompt choice, and override point. |
 | Customization | [`customization.md`](customization.md) | What the completion, history, prompt, and plugin modules provide. |
 | Startup profiling | [`profiling.md`](profiling.md) | `zprof`, first-prompt timing, and ablation measurements. |
-| Measurement | [`measurement.md`](measurement.md) | Commands, sandbox, provenance, and limitations of every published number. |
-| Bugs found | [`BUGS-FOUND.md`](BUGS-FOUND.md) | Reproduction notes for behavior discovered during this pass. |
+| Measurement | [`measurement.md`](measurement.md) | The Linux container run behind every published number. |
 
 The measurement scripts are in [`../tools/`](../tools). They use only Python’s
 standard library and write their JSON results beside themselves.

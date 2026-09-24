@@ -31,7 +31,7 @@ not trigger.
 
 ## Reproducible measurements
 
-The pass adds standard-library tools under `tools/`:
+Standard-library tools under `tools/` measure startup:
 
 ```sh
 python3 tools/bench_startup.py --reps 9
@@ -49,6 +49,8 @@ bindings, completion definitions, and `fpath`, then compares the complete
 profile with bare Zsh. The per-block output is diagnostic: shared Oh My Zsh
 state and load order mean a diff is not a claim of unique ownership.
 
-Raw results are committed beside the scripts. They include the repository
+[`tools/linux-run.sh`](../tools/linux-run.sh) runs both in a Linux container;
+see [measurement](measurement.md). Raw results are committed beside the
+scripts. They include the repository
 revision, host facts, sampled statistics, and shallow-checkout revisions so a
 future run can explain why timings changed.

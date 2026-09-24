@@ -1,0 +1,11 @@
+#!/usr/bin/env bash
+# Offline stand-in for git clone and git pull; everything else goes to the
+# real git so the installer can still read the repository commit.
+printf 'git %s\n' "$*" >>"${STUB_LOG:?}"
+args=("$@")
+[[ "${args[0]}" == -C ]] && args=("${args[@]:2}")
+case "${args[0]}" in
+  clone) mkdir -p "${args[-1]}/.git"; exit 0 ;;
+  pull) exit "${STUB_PULL_STATUS:-0}" ;;
+esac
+exec "${REAL_GIT:?}" "$@"

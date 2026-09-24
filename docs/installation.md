@@ -70,11 +70,9 @@ bash install_zsh.sh --profile pure --link
 bash install_zsh.sh --help
 ```
 
-The help command and syntax checks were run for this documentation pass. The
-full install was attempted only with a temporary `HOME`; it stopped in the Oh
-My Zsh bootstrap because of an inherited `ZSH` variable. The behavior and
-reproduction are recorded in [`BUGS-FOUND.md`](BUGS-FOUND.md), and the source
-was not changed.
+The classic `--link` install, a re-run over it, and the Pure `--copy` install
+were run in a Debian 12 container ([measurement](measurement.md)). All three
+exit 0 and write `install_manifest.txt`.
 
 ## Backing out
 
