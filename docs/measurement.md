@@ -2,113 +2,143 @@
 
 # How this was measured
 
-The numbers published in the README and this documentation come from commands
-run during this pass. The measurement scripts are committed in `tools/`; their
-JSON outputs retain the raw samples and host facts. No measurement changes the
-repository’s tracked shell or profile files.
+Every number in this documentation comes from one script run in a Linux
+container:
+
+```sh
+sh tools/linux-run.sh > docs/captures/linux-run.txt
+```
+
+[`tools/linux-run.sh`](../tools/linux-run.sh) starts `python:3.12-slim-bookworm`,
+installs Zsh, Git and curl, and clones the read-only mounted repository. It
+then runs the installer end to end in fresh home directories, the bug check,
+and the two measurement tools. The installer, apt and `chsh` only change the
+container. The full output is
+[`captures/linux-run.txt`](captures/linux-run.txt); the JSON results are
+written to `tools/results_*.json`.
 
 ```mermaid
 flowchart LR
-    A["measurement script"] --> B["temporary HOME<br/>external checkouts"]
-    B --> C["Zsh process<br/>PTY or command mode"]
-    C --> D["timings and shell dumps"]
-    D --> E["Markdown tables<br/>and JSON results"]
+    A["git clone<br/>in the container"] --> B["install_zsh.sh<br/>classic, re-run, pure"]
+    A --> C["bench_startup.py"]
+    A --> D["inventory.py"]
+    B --> E["BUGS-FOUND.md<br/>installation.md"]
+    C --> F["README startup table"]
+    D --> F
 
-    style B fill:#1f6feb,stroke:#58a6ff,color:#fff
-    style E fill:#238636,stroke:#3fb950,color:#fff
+    style A fill:#1f6feb,stroke:#58a6ff,color:#fff
+    style E fill:#8250df,stroke:#bc8cff,color:#fff
+    style F fill:#238636,stroke:#3fb950,color:#fff
 ```
 
-## Verification commands
+## Environment
 
-These read-only checks passed:
+| | |
+|---|---|
+| Kernel | Linux 6.5.11-linuxkit, aarch64 (Docker Desktop VM) |
+| Image | `python:3.12-slim-bookworm` (`sha256:392307d2…23564e`), Debian 12 |
+| Tools | Zsh 5.9, GNU bash 5.2.15, Python 3.12.14 |
+| User | root, so the installer's apt and `chsh` steps run without `sudo` |
+| Date | 2026-09-24 |
 
-```sh
-bash -n install_zsh.sh
-zsh -n profiles/classic/zshrc
-zsh -n profiles/pure/zshrc
-bash install_zsh.sh --help
+## Syntax checks
+
+```
+bash -n install_zsh.sh exit=0
+zsh -n profiles/classic/zshrc exit=0
+zsh -n profiles/pure/zshrc exit=0
+--help exit=0
 ```
 
-The command output showed the installer’s supported copy, link, profile, and
-help options. The full installer was attempted with a temporary `HOME`, but it
-did not complete because of the inherited `ZSH` bug documented in
-[`BUGS-FOUND.md`](BUGS-FOUND.md). No successful installation result is claimed.
+## Installer runs
+
+**Classic, `--link`, empty home:** exit 0. Oh My Zsh, both themes, the six
+plugins and the four MesloLGS NF fonts are installed. `autojump`, `direnv`,
+`sqlite3` and `pygmentize` come from apt. Fastfetch 2.68.1 is downloaded to
+`~/.local/bin`, with a warning that the directory is not on `PATH`. `.zshrc` and
+`.p10k.zsh` are symlinks into the checkout, the login shell changes to
+`/usr/bin/zsh`, and the manifest records `mode=link`, `profile=classic` and the
+commit. `zsh -i -c` with the deployed profile exits 0 with no stderr output.
+
+**Re-run over the same home:** exit 0. Oh My Zsh, both themes and all six
+plugins take the `git pull --ff-only` path, and `Zsh is already the default
+shell.` is printed. A second timestamped backup directory is created.
+
+**Pure, `--copy`, empty home:** `.zshrc` is a regular file, no `.p10k.zsh` is
+written, and the shell starts. The installer then exits 1 before the
+default-shell and manifest steps; that is entry 2 in
+[Bugs found](BUGS-FOUND.md).
+
+**Exported `ZSH`:** with `ZSH` pointing at another Oh My Zsh checkout, the
+install goes to the target home and leaves the other checkout alone (entry 1).
+
+The printed hints to install `autojump`, `direnv`, `sqlite3` and Pygments
+manually appear on every run, including when the tools are installed.
 
 ## Startup benchmark
-
-The command was:
 
 ```sh
 python3 tools/bench_startup.py --reps 9
 ```
 
-The script discards its warm-up round and records nine samples per variant. It
-uses a temporary `HOME` containing shallow checkouts of the external trees
-named by the installer. It writes the selected profile into that sandbox and
-does not source the user’s real dotfiles.
+The script uses a temporary `HOME` containing shallow checkouts of the external
+trees named by the installer. It writes each variant into that sandbox and
+does not source any real dotfiles. It discards a warm-up round and records nine
+samples per variant, interleaved in shuffled order.
 
 The two timings are deliberately different:
 
 - `first prompt` starts Zsh on a real PTY and stops after the first `precmd`
   marker. Deferred plugin hooks have run by that marker.
-- `zsh -i -c exit` measures the command documented by the repository. It exits
-  without reaching an interactive prompt, so it does not include the same
-  deferred work.
+- `zsh -i -c exit` exits without reaching an interactive prompt, so it does not
+  include the same deferred work.
 
-The report prints the minimum sample as its headline. The measured minimums,
-rounded to milliseconds by the reporting script, were:
+The headline is the minimum sample, rounded to milliseconds:
 
 | Configuration | First prompt | `zsh -i -c exit` |
 |---|---:|---:|
-| Bare Zsh, no `.zshrc` | 17 ms | 19 ms |
-| Classic profile | 215 ms | 124 ms |
-| Pure profile | 544 ms | 124 ms |
+| Bare Zsh, no `.zshrc` | 3 ms | 4 ms |
+| Classic profile | 106 ms | 65 ms |
+| Pure profile | 451 ms | 65 ms |
 
-The JSON also records the host as an Apple M1 Max, Darwin arm64, with Zsh 5.9.
-The result file was generated at the source revision recorded in its `host`
-object. These are wall-clock samples, not portability claims.
+The run took place after the installer runs, so `autojump`, `direnv`, `sqlite3`
+and `pygmentize` were on `PATH`; `fastfetch` and `fzf` were not. The JSON
+records this under `host.optional_tools`.
+
+The Pure first-prompt number does not break down by block. Removing any one
+of the six ablated blocks brings the first prompt down to 39–62 ms, so the
+"cost" column for Pure attributes about 390 ms to every block. The committed
+tools do not explain this, and the per-block Pure figures are not published as
+costs. The same pattern is in the earlier macOS results. For Classic, the
+largest ablation is Oh My Zsh core at +72 ms; the full list is in the capture.
 
 ## Shell inventory
-
-The commands were:
 
 ```sh
 python3 tools/inventory.py --profile classic --out tools/results_inventory.json
 python3 tools/inventory.py --profile pure --out tools/results_inventory_pure.json
 ```
 
-After the first prompt, the script dumped shell definitions and compared the
-full profile with a bare Zsh baseline. The complete-shell deltas were:
+After the first prompt, the script dumps shell definitions and compares the
+full profile with a bare Zsh baseline:
 
 | Profile | Aliases | Functions | Widgets | Key-binding lines | Completions |
 |---|---:|---:|---:|---:|---:|
-| Classic | 233 | 2,128 | 108 | 33 | 1,975 |
-| Pure | 233 | 1,798 | 102 | 33 | 1,975 |
+| Classic | 233 | 2,118 | 106 | 33 | 1,966 |
+| Pure | 233 | 1,788 | 100 | 33 | 1,966 |
 
-These counts describe names and definition lines present in the full shell
-delta. They do not assign every definition to a unique plugin. The raw JSON
-also contains per-block ablation diffs for investigation.
+These counts describe names and definition lines in the full shell delta. They
+do not assign every definition to a unique plugin. The JSON also contains
+per-block diffs.
 
-## Source-derived facts
+## Not covered
 
-The repository facts used in the overview were checked with shell commands:
+- macOS. The installer's font path has a `darwin` branch, and its package
+  steps are apt-only; only the Linux path was run.
+- A non-root install, where apt and `chsh` go through `sudo`.
+- The rendered prompt in a real terminal emulator, including the MesloLGS NF
+  glyphs.
+- Timings on other hardware. Plugin revisions are shallow-checkout facts
+  recorded in the JSON; timings change with revision drift and machine load.
 
-```sh
-find profiles -mindepth 1 -maxdepth 1 -type d | wc -l
-grep -c '^    \[.*\]=https://' install_zsh.sh
-git ls-files | wc -l
-```
-
-Those commands returned two profile directories, six plugin clone destinations,
-and eleven tracked files before this documentation pass. The profile and
-plugin lists themselves are copied from the tracked source, not inferred from
-timings.
-
-## What was not measured
-
-No real installer transcript was captured as an animation. The pass ships
-Mermaid diagrams only because the full install could not complete safely in the
-isolated test and the documentation contract forbids presenting staged or
-hand-written terminal output as a recording. Plugin revisions are shallow
-checkout facts captured by the scripts; timings can change with network state,
-revision drift, and machine load.
+The Mermaid diagrams describe the source; they are not captured program output.

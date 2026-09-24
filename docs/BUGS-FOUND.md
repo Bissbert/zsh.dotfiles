@@ -1,53 +1,98 @@
 [← back to the overview](../README.md)
 
-# Bugs found during the documentation pass
+# Bugs found
 
-> **Since this pass:** an independent adjudication confirmed the entry below,
-> and a subsequent fix pass applied it to the default branch in commit
-> `3627c9e`. `install_oh_my_zsh` now passes `ZSH="${target}"` to the upstream
-> bootstrap alongside `RUNZSH`, `CHSH` and `KEEP_ZSHRC`, so the bootstrap
-> installs to the same directory the installer uses for detection and updates.
-> Read the reproduction below as the state at the time of the pass, not as the
-> current state of the default branch.
+One bug was reproduced, reviewed and fixed on `main`. A second turned up when
+the installer was run end to end in a Linux container (see
+[How this was measured](measurement.md)); it is still open.
 
-## Oh My Zsh bootstrap inherits an unrelated `ZSH` variable
+| # | Entry | Status |
+|---|---|---|
+| 1 | Oh My Zsh bootstrap inherits an unrelated `ZSH` variable | Fixed in [`3627c9e`](https://github.com/Bissbert/zsh.dotfiles/commit/3627c9e) |
+| 2 | The Pure install exits 1 before the default shell and manifest steps | Open |
 
-**File and lines:** `install_zsh.sh:135-136`
+The checks below run inside the container that
+[`tools/linux-run.sh`](../tools/linux-run.sh) sets up (`python:3.12-slim-bookworm`,
+Debian 12, Zsh 5.9, GNU bash 5.2.15), as root, from a `git clone` of the
+repository.
 
-**What happens:** When the target Oh My Zsh directory does not exist, the
-installer invokes the upstream bootstrap through `sh -c` without setting or
-clearing `ZSH`. An exported `ZSH` from the caller can therefore make the
-bootstrap choose a different directory. In the isolated run for this pass, the
-temporary `HOME` was ignored by the bootstrap, which reported that the real
-`/Users/fabian/.oh-my-zsh` directory already existed and exited non-zero.
+```mermaid
+flowchart TD
+    A["install_zsh.sh"] --> B["install_oh_my_zsh<br/>ZSH=target (entry 1, fixed)"]
+    B --> C["themes, plugins, tools, fonts"]
+    C --> D["install_p10k_config<br/>install_zshrc"]
+    D --> E{"profile has<br/>fastfetch_logo.txt?"}
+    E -->|classic: yes| F["ensure_default_shell<br/>write_manifest"]
+    E -->|pure: no| X["return 1 under set -e<br/>exit 1 (entry 2)"]
 
-**How to reproduce:** From this checkout, use an exported `ZSH` that points to
-an existing Oh My Zsh checkout, and a temporary home whose `.oh-my-zsh` path is
-absent:
+    style B fill:#238636,stroke:#3fb950,color:#fff
+    style F fill:#238636,stroke:#3fb950,color:#fff
+    style X fill:#da3633,stroke:#f85149,color:#fff
+```
+
+## 1. Oh My Zsh bootstrap inherits an unrelated `ZSH` variable
+
+**Status:** fixed in [`3627c9e`](https://github.com/Bissbert/zsh.dotfiles/commit/3627c9e).
+
+**File:** `install_zsh.sh` (`install_oh_my_zsh`)
+
+**What happened:** when the target Oh My Zsh directory did not exist, the
+installer ran the upstream bootstrap without setting `ZSH`. An exported `ZSH`
+from the caller made the bootstrap use that directory instead of the target in
+`HOME`. With `ZSH` pointing at an existing checkout, the bootstrap reported
+`The $ZSH folder already exists` and the installer stopped with
+`[ERROR] Oh My Zsh installation failed.`
+
+**What changed:** the bootstrap is started with `ZSH="${target}"` alongside
+`RUNZSH`, `CHSH` and `KEEP_ZSHRC`, so it installs to the directory the
+installer uses for detection and updates. A deliberately exported alternative
+location is no longer used for a fresh install.
+
+**Check:** `ZSH` points at a separate existing Oh My Zsh clone, and `HOME` is
+empty:
 
 ```sh
-tmp_home=$(mktemp -d)
-ZSH="$HOME/.oh-my-zsh" \
-HOME="$tmp_home" ZDOTDIR="$tmp_home" SHELL="$(command -v zsh)" \
+git clone --depth=1 https://github.com/ohmyzsh/ohmyzsh.git /opt/other-omz
+ZSH=/opt/other-omz HOME=/home/bug1 ZDOTDIR=/home/bug1 SHELL="$(command -v zsh)" \
   bash install_zsh.sh --link
 ```
-The observed output includes:
 
-```text
-The $ZSH folder already exists (/Users/fabian/.oh-my-zsh).
-[ERROR] Oh My Zsh installation failed.
+```
+install exit=0
+lines with "folder already exists": 0
+Oh My Zsh in the target home: yes
+themes added to the exported checkout: 0
 ```
 
-**Fix I would have made:** pass the installer’s target directory to the
-upstream bootstrap explicitly. This documentation pass does not apply the
-change.
+## 2. The Pure install exits 1 before the default shell and manifest steps
 
-```diff
-diff --git a/install_zsh.sh b/install_zsh.sh
---- a/install_zsh.sh
-+++ b/install_zsh.sh
-@@
--    RUNZSH=no CHSH=no KEEP_ZSHRC=yes \
-+    ZSH="${target}" RUNZSH=no CHSH=no KEEP_ZSHRC=yes \
-       sh -c "$(curl -fsSL https://raw.githubusercontent.com/ohmyzsh/ohmyzsh/master/tools/install.sh)" || \
+**Status:** open. Found in the Linux run.
+
+**File:** `install_zsh.sh:365` (`install_fastfetch_logo`)
+
+**What happens:** `install_fastfetch_logo` starts with
+`[[ -f "${template}" ]] || return`. The Pure profile has no
+`fastfetch_logo.txt`, so the test fails and `return` passes on its status 1.
+The script runs with `set -e`, so it stops there. `.zshrc` has already been
+deployed and the shell starts, but `ensure_default_shell` and `write_manifest`
+never run, no "Installation complete" line is printed, and the exit status is 1:
+
+```sh
+HOME=/home/pure SHELL="$(command -v zsh)" bash install_zsh.sh --profile pure --copy
 ```
+
+```
+install exit=1
+last log line: [INFO] No Powerlevel10k configuration for this profile; skipping.
+"Installation complete" printed: 0
+install_manifest.txt files: 0
+--- trace of the last function
++ template=/work/zsh.dotfiles/profiles/pure/fastfetch_logo.txt
++ [[ -f /work/zsh.dotfiles/profiles/pure/fastfetch_logo.txt ]]
++ return
+```
+
+Without the manifest, the backup directory does not record which profile and
+commit were deployed, and a caller that checks the exit status sees a failure.
+
+**Possible fix:** `[[ -f "${template}" ]] || return 0`.

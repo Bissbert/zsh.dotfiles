@@ -70,11 +70,12 @@ bash install_zsh.sh --profile pure --link
 bash install_zsh.sh --help
 ```
 
-The help command and syntax checks were run for this documentation pass. The
-full install was attempted only with a temporary `HOME`; it stopped in the Oh
-My Zsh bootstrap because of an inherited `ZSH` variable. The behavior and
-reproduction are recorded in [`BUGS-FOUND.md`](BUGS-FOUND.md), and the source
-was not changed.
+The classic `--link` install, a re-run over it, and the Pure `--copy` install
+were run in a Debian 12 container ([measurement](measurement.md)). The classic
+runs exit 0. The Pure install deploys `.zshrc` and then exits 1 before the
+default-shell and manifest steps
+([bug 2](BUGS-FOUND.md#2-the-pure-install-exits-1-before-the-default-shell-and-manifest-steps)).
+An exported `ZSH` no longer redirects the Oh My Zsh bootstrap (bug 1, fixed).
 
 ## Backing out
 
