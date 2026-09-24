@@ -1,0 +1,38 @@
+#!/usr/bin/env bash
+# Offline stand-in for curl. Records every call and answers the three kinds of
+# request install_zsh.sh makes: the Oh My Zsh bootstrap, font downloads and
+# the fastfetch release archive.
+printf 'curl %s\n' "$*" >>"${STUB_LOG:?}"
+out=''
+url=''
+while (($#)); do
+  case "$1" in
+    -o|-fLso) out="$2"; shift ;;
+    -*) ;;
+    *) url="$1" ;;
+  esac
+  shift
+done
+case "$url" in
+  */ohmyzsh/*/tools/install.sh)
+    # The bootstrap installs into $ZSH, like the upstream script.
+    cat <<'SCRIPT'
+[ -d "$ZSH" ] && { echo "The \$ZSH folder already exists ($ZSH)."; exit 1; }
+mkdir -p "$ZSH/.git" "$ZSH/custom/themes" "$ZSH/custom/plugins"
+: >"$ZSH/oh-my-zsh.sh"
+SCRIPT
+    ;;
+  *fastfetch*)
+    [[ "${STUB_FASTFETCH:-fail}" == fail ]] && exit 22
+    tmp=$(mktemp -d)
+    mkdir -p "$tmp/fastfetch-linux/usr/bin"
+    printf '#!/bin/sh\necho fastfetch stub\n' >"$tmp/fastfetch-linux/usr/bin/fastfetch"
+    chmod +x "$tmp/fastfetch-linux/usr/bin/fastfetch"
+    tar -czf "$out" -C "$tmp" fastfetch-linux
+    rm -rf "$tmp"
+    ;;
+  *)
+    [[ -n "$out" ]] && { mkdir -p "$(dirname "$out")"; printf 'stub\n' >"$out"; }
+    ;;
+esac
+exit 0

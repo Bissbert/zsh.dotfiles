@@ -1,5 +1,5 @@
 #!/bin/sh
-# Run the installer, the bug check and the measurement tools in a Linux
+# Run the test suite, the installer and the measurement tools in a Linux
 # container, and print everything the documentation quotes.
 #
 #   sh tools/linux-run.sh > docs/captures/linux-run.txt
@@ -31,6 +31,11 @@ zsh --version
 bash --version | head -1
 python3 --version
 echo "repo HEAD: $(git log -1 --format="%h %s")"
+
+section "offline test suite (tests/run.sh)"
+bash tests/run.sh >/tmp/tests.log 2>&1
+echo "exit=$?"
+tail -1 /tmp/tests.log
 
 section "syntax checks"
 bash -n install_zsh.sh; echo "bash -n install_zsh.sh exit=$?"
@@ -83,9 +88,7 @@ levels /tmp/pure.log | grep -E "p10k|default shell|ERROR|WARN"
 echo "last log line: $(tail -1 /tmp/pure.log)"
 echo "\"Installation complete\" printed: $(grep -c "Installation complete" /tmp/pure.log)"
 echo "install_manifest.txt files: $(ls "$h"/.zsh-backups/*/install_manifest.txt 2>/dev/null | wc -l)"
-echo "--- trace of the last function"
-HOME=/home/pure-trace SHELL="$(command -v zsh)" \
-  bash -x install_zsh.sh --profile pure --copy 2>&1 | grep -E "^\++ " | tail -3
+grep -E "^(mode|profile)=" "$h"/.zsh-backups/*/install_manifest.txt
 echo ".zshrc: $(test -L "$h/.zshrc" && echo symlink || echo regular file)"
 echo ".p10k.zsh: $(test -e "$h/.p10k.zsh" && echo present || echo absent)"
 HOME="$h" zsh -i -c "echo \"ZSH=\$ZSH\"" </dev/null 2>/tmp/pure.err

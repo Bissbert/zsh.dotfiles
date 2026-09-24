@@ -1,0 +1,4 @@
+#!/usr/bin/env bash
+printf 'sudo %s\n' "$*" >>"${STUB_LOG:?}"
+[[ "sudo" == sudo ]] && exec "$@"
+exit "${STUB_APT_STATUS:-0}"

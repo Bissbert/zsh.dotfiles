@@ -1,0 +1,3 @@
+#!/usr/bin/env bash
+printf 'chsh %s\n' "$*" >>"${STUB_LOG:?}"
+exit "${STUB_CHSH_STATUS:-0}"
