@@ -96,20 +96,23 @@ The headline is the minimum sample, rounded to milliseconds:
 
 | Configuration | First prompt | `zsh -i -c exit` |
 |---|---:|---:|
-| Bare Zsh, no `.zshrc` | 3 ms | 4 ms |
-| Classic profile | 109 ms | 65 ms |
-| Pure profile | 462 ms | 64 ms |
+| Bare Zsh, no `.zshrc` | 9 ms | 23 ms |
+| Classic profile | 604 ms | 209 ms |
+| Pure profile | 2931 ms | 225 ms |
+
+The Docker VM was under other load during this capture, so the absolute times
+are several times higher than on an idle host; compare rows within one run.
 
 The run took place after the installer runs, so `autojump`, `direnv`, `sqlite3`
 and `pygmentize` were on `PATH`; `fastfetch` and `fzf` were not. The JSON
 records this under `host.optional_tools`.
 
 The Pure first-prompt number does not break down by block. Removing any one
-of the six ablated blocks brings the first prompt down to 40–64 ms, so the
-"cost" column for Pure attributes about 400 ms to every block. The committed
+of the six ablated blocks brings the first prompt down to 233–396 ms, so the
+"cost" column for Pure attributes about 2.5–2.7 s to every block. The committed
 tools do not explain this, and the per-block Pure figures are not published as
 costs. The same pattern is in the earlier macOS results. For Classic, the
-largest ablation is Oh My Zsh core at +73 ms; the full list is in the capture.
+largest ablation is Oh My Zsh core at +463 ms; the full list is in the capture.
 
 ## Shell inventory
 

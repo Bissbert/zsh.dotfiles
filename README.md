@@ -130,9 +130,12 @@ prompt.
 
 | Configuration | First prompt | `zsh -i -c exit` |
 |---|---:|---:|
-| Bare Zsh, no `.zshrc` | 3 ms | 4 ms |
-| Classic profile | 109 ms | 65 ms |
-| Pure profile | 462 ms | 64 ms |
+| Bare Zsh, no `.zshrc` | 9 ms | 23 ms |
+| Classic profile | 604 ms | 209 ms |
+| Pure profile | 2931 ms | 225 ms |
+
+The Docker VM was under other load during this capture, so the absolute times
+are several times higher than on an idle host; compare rows within one run.
 
 The complete interactive-shell inventory for Classic differed from bare Zsh by
 233 aliases, 2,118 functions, 106 widgets, 33 key-binding lines, and 1,966

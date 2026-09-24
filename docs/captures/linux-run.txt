@@ -5,7 +5,7 @@ Debian GNU/Linux 12 (bookworm)
 zsh 5.9 (aarch64-unknown-linux-gnu)
 GNU bash, version 5.2.15(1)-release (aarch64-unknown-linux-gnu)
 Python 3.12.14
-repo HEAD: 8bce836 Let the Pure install finish without a Fastfetch logo
+repo HEAD: 6e1fd9c Docs: drop BUGS-FOUND.md, bugs are tracked as issues
 
 === offline test suite (tests/run.sh)
 exit=0
@@ -37,7 +37,7 @@ install exit=0
 [INFO] Downloading fastfetch from https://github.com/fastfetch-cli/fastfetch/releases/latest/download/fastfetch-linux-aarch64.tar.gz
 [WARN] fastfetch installed to /home/classic/.local/bin, but the directory is not in PATH. Add 'export PATH="/home/classic/.local/bin:$PATH"' to your shell init.
 [INFO] Default shell changed to /usr/bin/zsh.
-[INFO] Backups stored in /home/classic/.zsh-backups/20260924-124138
+[INFO] Backups stored in /home/classic/.zsh-backups/20260924-141602
 [INFO] Installation complete. Set MesloLGS NF in your terminal profile to finish setup.
 [HINT] Install autojump manually if needed: sudo apt install autojump
 [HINT] Install direnv manually if needed: sudo apt install direnv
@@ -59,7 +59,7 @@ root login shell: /usr/bin/zsh
 timestamp=<run time>
 script_path=install_zsh.sh
 repo_root=/work/zsh.dotfiles
-git_commit=8bce8364fa48afdd9f4379b391f6383b4a9dea7c
+git_commit=6e1fd9c51900539fa4961770a13b44bf4d6b779d
 mode=link
 profile=classic
 --- zsh -i -c exit with the deployed profile
@@ -68,7 +68,7 @@ exit=0 stderr lines=0
 
 === re-run over the classic install (update path)
 install exit=0
-      1 [INFO] Backups stored in /home/classic/.zsh-backups/20260924-124150
+      1 [INFO] Backups stored in /home/classic/.zsh-backups/20260924-141629
       1 [INFO] Oh My Zsh already present. Updating...
       1 [INFO] Setting up Powerlevel10k...
       1 [INFO] Setting up Pure prompt...
@@ -100,39 +100,39 @@ zsh -i -c exit=0 stderr lines=0
 
 | configuration | time to first prompt | `zsh -i -c exit` |
 |---|---:|---:|
-| bare zsh, no zshrc | 3 ms | 4 ms |
-| classic profile | 109 ms | 65 ms |
-| pure profile | 462 ms | 64 ms |
+| bare zsh, no zshrc | 9 ms | 23 ms |
+| classic profile | 604 ms | 209 ms |
+| pure profile | 2931 ms | 225 ms |
 
 ### classic -- cost per block (ablation)
 
 | removed block | first prompt without it | cost of the block |
 |---|---:|---:|
-| oh-my-zsh core | 36 ms | +73 ms |
-| all deferred plugins | 88 ms | +21 ms |
-| p10k.zsh (prompt config) | 90 ms | +19 ms |
-| syntax highlighting | 98 ms | +10 ms |
-| fzf-tab | 104 ms | +5 ms |
-| compinit | 105 ms | +4 ms |
-| history-substring-search | 105 ms | +3 ms |
-| zsh-autosuggestions | 106 ms | +2 ms |
-| autojump + direnv | 107 ms | +1 ms |
-| zsh-histdb | 108 ms | +1 ms |
-| fastfetch banner | 108 ms | +1 ms |
-| colored-man-pages | 108 ms | +1 ms |
-| fzf key-bindings | 109 ms | -1 ms |
-| colorize | 109 ms | -1 ms |
+| oh-my-zsh core | 141 ms | +463 ms |
+| all deferred plugins | 461 ms | +143 ms |
+| p10k.zsh (prompt config) | 468 ms | +136 ms |
+| syntax highlighting | 485 ms | +119 ms |
+| zsh-autosuggestions | 510 ms | +94 ms |
+| history-substring-search | 561 ms | +43 ms |
+| colorize | 563 ms | +41 ms |
+| colored-man-pages | 591 ms | +13 ms |
+| fzf-tab | 598 ms | +6 ms |
+| compinit | 603 ms | +1 ms |
+| fzf key-bindings | 628 ms | -24 ms |
+| fastfetch banner | 633 ms | -29 ms |
+| autojump + direnv | 648 ms | -44 ms |
+| zsh-histdb | 706 ms | -102 ms |
 
 ### pure -- cost per block (ablation)
 
 | removed block | first prompt without it | cost of the block |
 |---|---:|---:|
-| oh-my-zsh core | 40 ms | +422 ms |
-| all deferred plugins | 47 ms | +415 ms |
-| pure prompt | 57 ms | +405 ms |
-| fzf-tab | 61 ms | +400 ms |
-| compinit | 62 ms | +399 ms |
-| zsh-histdb | 64 ms | +398 ms |
+| oh-my-zsh core | 233 ms | +2698 ms |
+| all deferred plugins | 236 ms | +2695 ms |
+| pure prompt | 289 ms | +2642 ms |
+| zsh-histdb | 352 ms | +2579 ms |
+| fzf-tab | 394 ms | +2537 ms |
+| compinit | 396 ms | +2535 ms |
 exit=0
 wrote /out/results_startup.json
 
